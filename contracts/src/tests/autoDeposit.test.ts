@@ -11,13 +11,17 @@ import {
 } from '@massalabs/massa-web3';
 import * as dotenv from 'dotenv';
 import { TokenWithPercentage } from '../calls/structs/TokenWithPercentage';
-import { USDC_TOKEN_ADDRESS, WETH_TOKEN_ADDRESS } from '../calls/const';
+import {
+  USDC_DECIMALS,
+  USDC_TOKEN_ADDRESS,
+  WETH_TOKEN_ADDRESS,
+} from '../calls/const';
 import {
   createSplitterVault,
   deployFactory,
   getUserSplitterVaults,
 } from '../calls/factory';
-import { depositToSplitterVault } from '../calls/splitter';
+import { depositToSplitterVault, enableAutoDeposit } from '../calls/splitter';
 import { increaseTokenAllowance } from '../calls/token';
 
 dotenv.config();
@@ -62,32 +66,46 @@ console.log('Test passed successfully');
 
 const firstSplitterVault = new SmartContract(provider, splitterVaults[0]);
 
-const amount = '10';
-
-// Increase the Allowance of the splitter vault contract to spend user's USDC
+// Increase allowance for USDC for the vault to pull funds
 await increaseTokenAllowance(
   usdcTokenContract,
-  firstSplitterVault.address.toString(),
-  amount,
+  firstSplitterVault.address,
+  '2',
 );
 
-// Deposit
-await depositToSplitterVault(firstSplitterVault, amount);
 
-// Get the balance of the splitter vault
-const balance = await usdcTokenContract.balanceOf(
-  firstSplitterVault.address.toString(),
+const usdcUserBalanceBefore = await usdcTokenContract.balanceOf(
+  provider.address,
 );
-console.log(`Splitter vault USDC balance: ${formatUnits(balance, 6)} USDC`);
+const vaultUsdcBalanceBefore = await usdcTokenContract.balanceOf(
+  firstSplitterVault.address,
+);
 
-const wethBalance = await wethTokenContract.balanceOf(
-  firstSplitterVault.address.toString(),
-);
 console.log(
-  `Splitter vault WETH balance: ${formatUnits(wethBalance, 18)} WETH`,
+  `USDC Balance Before Enable - User: ${formatUnits(
+    usdcUserBalanceBefore,
+    USDC_DECIMALS,
+  )}, Vault: ${formatUnits(vaultUsdcBalanceBefore, USDC_DECIMALS)}`,
 );
 
-const wmasBalance = await wmasTokenContract.balanceOf(
-  firstSplitterVault.address.toString(),
+// Enable Auto Deposit for USDC
+await enableAutoDeposit(
+  firstSplitterVault,
+  '0.1',
+  account.address.toString(),
+  64,
 );
-console.log(`Splitter vault WMAS balance: ${formatUnits(wmasBalance, 9)} WMAS`);
+
+const usdcUserBalanceAfter = await usdcTokenContract.balanceOf(
+  provider.address,
+);
+const vaultUsdcBalanceAfter = await usdcTokenContract.balanceOf(
+  firstSplitterVault.address,
+);
+
+console.log(
+  `USDC Balance After Enable - User: ${formatUnits(
+    usdcUserBalanceAfter,
+    USDC_DECIMALS,
+  )}, Vault: ${formatUnits(vaultUsdcBalanceAfter, USDC_DECIMALS)}`,
+);

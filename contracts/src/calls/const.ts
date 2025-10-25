@@ -4,3 +4,5 @@ export const USDC_TOKEN_ADDRESS =
   'AS12N76WPYB3QNYKGhV2jZuQs1djdhNJLQgnm7m52pHWecvvj1fCQ';
 export const WETH_TOKEN_ADDRESS =
   'AS12rcqHGQ3bPPhnjBZsYiANv9TZxYp96M7r49iTMUrX8XCJQ8Wrk';
+
+export const USDC_DECIMALS = 6;

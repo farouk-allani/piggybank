@@ -5,6 +5,7 @@ import {
   createSC,
   fileToByteArray,
   generateEvent,
+  getBytecodeOf,
   Storage,
 } from '@massalabs/massa-as-sdk';
 import { Args, boolToByte, stringToBytes } from '@massalabs/as-types';
@@ -13,6 +14,7 @@ import { ReentrancyGuard } from './lib/ReentrancyGuard';
 import { TokenWithPercentage } from './structs/token';
 import { wrapMasToWMAS } from './lib/wrapping';
 import {
+  BASE_TOKEN_ADDRESS,
   USDC_TOKEN_ADDRESS,
   WETH_TOKEN_ADDRESS,
   WMAS_TOKEN_ADDRESS,
@@ -29,11 +31,14 @@ import { getBalanceEntryCost } from '@massalabs/sc-standards/assembly/contracts/
 const tokensPoolsMap = new PersistentMap<string, string>('tpools');
 // Storage key for eaglefi swap router address
 const EAGLE_SWAP_ROUTER_ADDRESS = 'ESAPR';
+const SPLITTER_TEMPLATE_ADDRESS_KEY = 'STVA';
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.
  *
  * @param binaryArgs - Arguments serialized with Args
+ * - swapRouterAddress: string - The address of the eaglefi swap router
+ * - splitterTemplateAddress: string - The address of the splitter template contract
  */
 export function constructor(binaryArgs: StaticArray<u8>): void {
   // This line is important. It ensures that this function can't be called in the future.
@@ -46,8 +51,15 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     .nextString()
     .expect('swap router address expected');
 
+  const splitterTemplateAddress = args
+    .nextString()
+    .expect('splitter template address expected');
+
   // Set the eaglefi swap router address
   Storage.set(EAGLE_SWAP_ROUTER_ADDRESS, swapRouterAddress);
+
+  // Set the splitter template address
+  Storage.set(SPLITTER_TEMPLATE_ADDRESS_KEY, splitterTemplateAddress);
 
   // Set default tokens pools of eaglefi
   tokensPoolsMap.set(
@@ -85,8 +97,13 @@ export function createSplitterVault(binaryArgs: StaticArray<u8>): void {
 
   const caller = Context.caller();
 
-  const splitterVaultByteCode: StaticArray<u8> = fileToByteArray(
-    'build/splitter.wasm',
+  // Get the splitter template address from storage and its bytecode
+  const splitterTemplateAddress = Storage.get(SPLITTER_TEMPLATE_ADDRESS_KEY);
+
+  assert(splitterTemplateAddress.length > 0, 'SPLITTER_TEMPLATE_NOT_SET');
+
+  const splitterVaultByteCode: StaticArray<u8> = getBytecodeOf(
+    new Address(splitterTemplateAddress),
   );
 
   const vaultAddress = createSC(splitterVaultByteCode);
@@ -94,7 +111,18 @@ export function createSplitterVault(binaryArgs: StaticArray<u8>): void {
   // Call the constructor of the splitter contract
   const splitterContract = new ISplitter(vaultAddress);
 
-  splitterContract.init(tokensWithPercentage, caller, initCoins);
+  // Get the eaglefi router address from storage
+  const eaglefiRouterAddress = new Address(
+    Storage.get(EAGLE_SWAP_ROUTER_ADDRESS),
+  );
+
+  // Initialize the splitter contract
+  splitterContract.init(
+    tokensWithPercentage,
+    caller,
+    eaglefiRouterAddress,
+    initCoins,
+  );
 
   // Store the unique key for the user and the vault
   const userVaultKey = generateSplitterUserKey(
@@ -131,16 +159,19 @@ export function createAndDepositSplitterVault(
 
   const depositAmount = args.nextU256().expect('Deposit amount expected');
 
-  const isNative = args.nextBool().expect('isNative expected');
-
   const coinsToUse = args.nextU64().expect('coinsToUse expected');
 
   const deadline = args.nextU64().expect('deadline expected');
 
   const caller = Context.caller();
 
-  const splitterVaultByteCode: StaticArray<u8> = fileToByteArray(
-    'build/splitter.wasm',
+  // Get the splitter template address from storage and its bytecode
+  const splitterTemplateAddress = Storage.get(SPLITTER_TEMPLATE_ADDRESS_KEY);
+
+  assert(splitterTemplateAddress.length > 0, 'SPLITTER_TEMPLATE_NOT_SET');
+
+  const splitterVaultByteCode: StaticArray<u8> = getBytecodeOf(
+    new Address(splitterTemplateAddress),
   );
 
   const vaultAddress = createSC(splitterVaultByteCode);
@@ -148,7 +179,18 @@ export function createAndDepositSplitterVault(
   // Call the constructor of the splitter contract
   const splitterContract = new ISplitter(vaultAddress);
 
-  splitterContract.init(tokensWithPercentage, caller, initCoins);
+  // Get the eaglefi router address from storage
+  const eaglefiRouterAddress = new Address(
+    Storage.get(EAGLE_SWAP_ROUTER_ADDRESS),
+  );
+
+  // Initialize the splitter contract
+  splitterContract.init(
+    tokensWithPercentage,
+    caller,
+    eaglefiRouterAddress,
+    initCoins,
+  );
 
   // Store the unique key for the user and the vault
   const userVaultKey = generateSplitterUserKey(
@@ -157,44 +199,19 @@ export function createAndDepositSplitterVault(
   );
   Storage.set(userVaultKey, '1');
 
-  // Emit an event with the address of the newly created splitter vault
-  generateEvent(
-    createEvent('CREATE_SPLITTER_VAULT', [
-      vaultAddress.toString(),
-      caller.toString(),
-    ]),
-  );
-
   // Start the deposit process
-  const wmasToken = new IMRC20(new Address(WMAS_TOKEN_ADDRESS));
+  const baseToken = new IMRC20(new Address(BASE_TOKEN_ADDRESS));
 
-  // If isNative is true, Wrap the native token (MAS) into WMAS
-  if (isNative) {
-    wrapMasToWMAS(depositAmount, new Address(WMAS_TOKEN_ADDRESS));
-    // Transfer the WMAS from this contract to the vault contract after wrapping
-    wmasToken.transfer(
-      vaultAddress,
-      depositAmount,
-      getBalanceEntryCost(WMAS_TOKEN_ADDRESS, vaultAddress.toString()),
-    );
-  } else {
-    // Transfer the tokens from the sender to this vault contract
-    wmasToken.transferFrom(
-      Context.caller(),
-      vaultAddress,
-      depositAmount,
-      getBalanceEntryCost(WMAS_TOKEN_ADDRESS, vaultAddress.toString()),
-    );
-  }
+  // Transfer the tokens from the sender to this vault contract
+  baseToken.transferFrom(
+    Context.caller(),
+    vaultAddress,
+    depositAmount,
+    getBalanceEntryCost(BASE_TOKEN_ADDRESS, vaultAddress.toString()),
+  );
 
   // Call the deposit function of the splitter contract
-  splitterContract.deposit(
-    depositAmount,
-    isNative,
-    coinsToUse,
-    deadline,
-    depositCoins,
-  );
+  splitterContract.deposit(depositAmount, coinsToUse, deadline, depositCoins);
 
   // Emit an event with the address of the newly created splitter vault
   generateEvent(
@@ -202,7 +219,6 @@ export function createAndDepositSplitterVault(
       vaultAddress.toString(),
       caller.toString(),
       depositAmount.toString(),
-      isNative.toString(),
     ]),
   );
 
@@ -262,5 +278,29 @@ export function setEagleSwapRouterAddress(binaryArgs: StaticArray<u8>): void {
 export function getEagleSwapRouterAddress(): StaticArray<u8> {
   const address = Storage.get(EAGLE_SWAP_ROUTER_ADDRESS);
   assert(address != null, 'SWAP_ROUTER_NOT_SET');
+  return stringToBytes(address);
+}
+
+export function setSplitterTemplateAddress(binaryArgs: StaticArray<u8>): void {
+  // Only the owner can set the splitter template address
+  onlyOwner();
+
+  const args = new Args(binaryArgs);
+
+  const templateAddress = args.nextString().expect('template address expected');
+
+  Storage.set(SPLITTER_TEMPLATE_ADDRESS_KEY, templateAddress);
+
+  generateEvent(
+    createEvent('SPLITTER_TEMPLATE_ADDRESS_SET', [
+      templateAddress,
+      Context.caller().toString(),
+    ]),
+  );
+}
+
+export function getSplitterTemplateAddress(): StaticArray<u8> {
+  const address = Storage.get(SPLITTER_TEMPLATE_ADDRESS_KEY);
+  assert(address != null, 'SPLITTER_TEMPLATE_NOT_SET');
   return stringToBytes(address);
 }

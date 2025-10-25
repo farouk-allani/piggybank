@@ -14,12 +14,16 @@ export default function Landing() {
             .
           </h1>
           <p className="mt-4 text-lg">
-            Create autonomous vaults powered by Massa’s Autonomous Smart
-            Contracts. No bots. No keepers. Just code that runs.
+            Create autonomous vaults powered by Massa's Autonomous Smart
+            Contracts. Deposit USDC and automatically split it across multiple tokens.
+            No bots. No keepers. Just code that runs.
           </p>
           <div className="mt-6 flex gap-3">
             <Link to="/vault/create" className="brut-btn bg-lime-300">
               Launch Vault
+            </Link>
+            <Link to="/dca/create" className="brut-btn bg-blue-300">
+              Create DCA
             </Link>
             <Link to="/dashboard" className="brut-btn bg-yellow-300">
               View Dashboard
@@ -45,11 +49,11 @@ export default function Landing() {
         <BentoCard title="Autonomous Savings" bg="#FD5A46">
           <p>Set once. Runs forever with Deferred Calls.</p>
         </BentoCard>
-        <BentoCard title="DCA Engine" bg="#84CC16">
-          <p>Swap at regular intervals without off‑chain keepers.</p>
+        <BentoCard title="DCA Strategies" bg="#84CC16">
+          <p>Automate your investments with Dollar Cost Averaging. Buy assets at regular intervals.</p>
         </BentoCard>
-        <BentoCard title="Subscriptions" bg="#F59E0B">
-          <p>On‑chain recurring payments with guaranteed execution.</p>
+        <BentoCard title="Splitter Vaults" bg="#F59E0B">
+          <p>Deposit USDC and automatically split into MAS, ETH, and more via EagleFi DEX.</p>
         </BentoCard>
         <BentoCard title="DeWeb Frontend" bg="#60A5FA">
           <p>Truly unstoppable UI hosted on the blockchain.</p>

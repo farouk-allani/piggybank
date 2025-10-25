@@ -7,11 +7,15 @@ import VaultDetails from "./pages/VaultDetails.tsx";
 import Analytics from "./pages/Analytics.tsx";
 import About from "./pages/About.tsx";
 import Settings from "./pages/Settings.tsx";
+
+import DCADashboard from "./pages/DCADashboard.tsx";
+import DCADetails from "./pages/DCADetails.tsx";
 import AppLayout from "./components/AppLayout.tsx";
 import NetworkWarningModal from "./components/NetworkWarningModal.tsx";
 import useAccountSync from "./hooks/useAccountSync.tsx";
 import useNetworkCheck from "./hooks/useNetworkCheck.tsx";
 import "react-toastify/dist/ReactToastify.css";
+import CreateDCA from "./pages/CreateDCA.tsx";
 
 export default function App() {
   useAccountSync();
@@ -25,6 +29,9 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/vault/create" element={<CreateVault />} />
           <Route path="/vault/:id" element={<VaultDetails />} />
+          <Route path="/dca/create" element={<CreateDCA />} />
+          <Route path="/dca/dashboard" element={<DCADashboard />} />
+          <Route path="/dca/:id" element={<DCADetails />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/about" element={<About />} />
           <Route path="/settings" element={<Settings />} />

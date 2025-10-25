@@ -16,9 +16,10 @@
         "fmt:check": "npm run prettier && npm run lint",
         "fmt": "npm run prettier:fix && npm run lint:fix",
         "events": "tsx src/events.ts",
-        "test:createSplitter": "tsx src/tests/createSplitterVault.test.ts",
-        "test:createAndDepositSplitter": "tsx src/tests/createAndDepositSpliter.test.ts",
-        "test:getSplitterInfo": "tsx src/tests/getVaultDetails.test.ts"
+        "test:createSplitter": "npm run build && tsx src/tests/createSplitterVault.test.ts",
+        "test:createAndDepositSplitter": "npm run build && tsx src/tests/createAndDepositSpliter.test.ts",
+        "test:getSplitterInfo": "tsx src/tests/getVaultDetails.test.ts",
+        "test:autoDeposit": "npm run build && tsx src/tests/autoDeposit.test.ts"
     },
     "keywords": [],
     "author": "",

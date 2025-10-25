@@ -40,6 +40,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <nav className="hidden md:flex items-center gap-3">
             <NavLink to="/dashboard">Dashboard</NavLink>
             <NavLink to="/vault/create">Create Vault</NavLink>
+            <NavLink to="/dca/dashboard">DCA</NavLink>
             <NavLink to="/analytics">Analytics</NavLink>
             <NavLink to="/about">About</NavLink>
             {/* <NavLink to="/settings">Settings</NavLink> */}

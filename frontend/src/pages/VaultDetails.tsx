@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import VaultDeposit from "../components/VaultDeposit";
 import VaultWithdraw from "../components/VaultWithdraw";
+import VaultAutoDeposit from "../components/VaultAutoDeposit";
 import { AVAILABLE_TOKENS, TokenSelection } from "../lib/types";
 import { getVaultTokenBalances, getVaultTokenSelections } from "../lib/massa";
 
@@ -38,56 +39,55 @@ export default function VaultDetails() {
       }
 
       try {
-        console.log('Fetching real vault data for:', id);
-        
+        console.log("Fetching real vault data for:", id);
+
         // Fetch real token allocation and creation timestamp
         let tokens: TokenSelection[] = [];
         let creationTimestamp: number | null = null;
-        
+
         try {
           tokens = await getVaultTokenSelections(connectedAccount, id);
-          console.log('Real tokens:', tokens);
+          console.log("Real tokens:", tokens);
         } catch (error) {
-          console.error('Error fetching tokens:', error);
+          console.error("Error fetching tokens:", error);
           tokens = [];
         }
-        
+
         // For now, skip timestamp fetching due to API complexities
         creationTimestamp = null;
-        
+
         if (!tokens || tokens.length === 0) {
           // Fallback to mock data if no tokens found
-          console.log('No tokens found in vault storage, using fallback');
+          console.log("No tokens found in vault storage, using fallback");
           setVault({
             address: id,
             name: "Splitter Vault",
             tokens: AVAILABLE_TOKENS.map((token, index) => ({
               ...token,
               percentage: index === 0 ? 50 : index === 1 ? 30 : 20,
-              isSelected: true
+              isSelected: true,
             })),
             balance: "0.00",
             status: "Active",
-            createdAt: new Date().toLocaleDateString()
+            createdAt: new Date().toLocaleDateString(),
           });
         } else {
           // Use real vault data
-          console.log('Using real vault data');
+          console.log("Using real vault data");
           const createdDate = new Date().toLocaleDateString(); // Use current date as fallback
-          
+
           setVault({
             address: id,
             name: "Splitter Vault",
             tokens: tokens || [],
             balance: "0.00",
             status: "Active",
-            createdAt: createdDate
+            createdAt: createdDate,
           });
         }
-        
       } catch (error) {
-        console.error('Error fetching vault data:', error);
-        setError('Failed to fetch vault data');
+        console.error("Error fetching vault data:", error);
+        setError("Failed to fetch vault data");
       } finally {
         setLoading(false);
       }
@@ -100,41 +100,45 @@ export default function VaultDetails() {
     if (!vault || !connectedAccount) return;
 
     setBalancesLoading(true);
-    
+
     let toastId: any = null;
     if (showToast) {
-      toastId = toast.loading('Refreshing token balances...');
+      toastId = toast.loading("Refreshing token balances...");
     }
 
     try {
-      console.log('Fetching token balances for vault:', vault.address);
-      
-      const tokenAddresses = vault.tokens.map(token => token.address);
+      console.log("Fetching token balances for vault:", vault.address);
+
+      const tokenAddresses = vault.tokens.map((token) => token.address);
       const balances = await getVaultTokenBalances(
         connectedAccount,
         vault.address,
         tokenAddresses
       );
-      
-      console.log('Token balances received:', balances);
+
+      console.log("Token balances received:", balances);
       setTokenBalances(balances);
 
       if (toastId) {
-        const nonZeroBalances = Object.values(balances).filter(balance => balance !== '0').length;
+        const nonZeroBalances = Object.values(balances).filter(
+          (balance) => balance !== "0"
+        ).length;
         toast.update(toastId, {
-          render: `💰 Updated balances for ${nonZeroBalances} token${nonZeroBalances === 1 ? '' : 's'}`,
-          type: 'success',
+          render: `💰 Updated balances for ${nonZeroBalances} token${
+            nonZeroBalances === 1 ? "" : "s"
+          }`,
+          type: "success",
           isLoading: false,
           autoClose: 3000,
         });
       }
     } catch (err) {
-      console.error('Error fetching token balances:', err);
-      
+      console.error("Error fetching token balances:", err);
+
       if (toastId) {
         toast.update(toastId, {
-          render: 'Failed to fetch token balances',
-          type: 'error',
+          render: "Failed to fetch token balances",
+          type: "error",
           isLoading: false,
           autoClose: 5000,
         });
@@ -151,7 +155,9 @@ export default function VaultDetails() {
   }, [vault, connectedAccount]);
 
   if (loading) {
-    return <div className="brut-card bg-white p-6">Loading vault details...</div>;
+    return (
+      <div className="brut-card bg-white p-6">Loading vault details...</div>
+    );
   }
 
   if (error || !vault) {
@@ -179,80 +185,87 @@ export default function VaultDetails() {
     }, 2000); // Wait 2 seconds for the transaction to be processed
   };
 
-  const hasTokenBalances = Object.values(tokenBalances).some(balance => parseFloat(balance) > 0);
+  const hasTokenBalances = Object.values(tokenBalances).some(
+    (balance) => parseFloat(balance) > 0
+  );
 
   return (
     <>
-    <div className="grid lg:grid-cols-3 gap-6">
-      {/* Main Vault Info */}
-      <div className="lg:col-span-2 space-y-6">
-        <div className="brut-card bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-black">{vault.name}</h1>
-            <div className="flex items-center space-x-3">
-              <div className="brut-btn bg-lime-300">
-                {vault.status}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Main Vault Info */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="brut-card bg-white p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-3xl font-black">{vault.name}</h1>
+              <div className="flex items-center space-x-3">
+                <div className="brut-btn bg-lime-300">{vault.status}</div>
+                {connectedAccount && hasTokenBalances && (
+                  <button
+                    onClick={() => setShowWithdrawModal(true)}
+                    className="brut-btn bg-red-300 border-red-500"
+                  >
+                    Withdraw
+                  </button>
+                )}
               </div>
-              {connectedAccount && hasTokenBalances && (
-                <button
-                  onClick={() => setShowWithdrawModal(true)}
-                  className="brut-btn bg-red-300 border-red-500"
-                >
-                   Withdraw
-                </button>
-              )}
             </div>
-          </div>
-          
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-1">Vault Address:</p>
-            <p className="font-mono text-sm break-all bg-gray-100 p-2 rounded">
-              {vault.address}
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* <div className="brut-card bg-lime-200 p-4">
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-1">Vault Address:</p>
+              <p className="font-mono text-sm break-all bg-gray-100 p-2 rounded">
+                {vault.address}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* <div className="brut-card bg-lime-200 p-4">
               <p className="text-sm font-bold">Total Balance</p>
               <p className="text-2xl font-black">{vault.balance} MAS</p>
             </div> */}
-            <div className="brut-card bg-yellow-200 p-4">
-              <p className="text-sm font-bold">Tokens</p>
-              <p className="text-2xl font-black">{vault.tokens.length}</p>
-            </div>
-            <div className="brut-card bg-blue-200 p-4">
-              <p className="text-sm font-bold">Created</p>
-              <p className="text-2xl font-black">{vault.createdAt}</p>
+              <div className="brut-card bg-yellow-200 p-4">
+                <p className="text-sm font-bold">Tokens</p>
+                <p className="text-2xl font-black">{vault.tokens.length}</p>
+              </div>
+              <div className="brut-card bg-blue-200 p-4">
+                <p className="text-sm font-bold">Created</p>
+                <p className="text-2xl font-black">{vault.createdAt}</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Token Allocation */}
-        <div className="brut-card bg-white p-6">
-          <h2 className="text-xl font-black mb-4">Token Allocation</h2>
-          <div className="space-y-3">
-            {vault.tokens.map((token, index) => (
-              <div key={token.address} className="brut-card bg-gray-50 p-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src={token.logo}
-                      alt={token.symbol}
-                      className="w-10 h-10 rounded-full"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                    <div>
-                      <div className="font-bold">{token.symbol}</div>
-                      <div className="text-sm text-gray-600">{token.name}</div>
-                      <div className="text-xs text-gray-500 font-mono">{token.address.slice(0, 8)}...{token.address.slice(-6)}</div>
+          {/* Token Allocation */}
+          <div className="brut-card bg-white p-6">
+            <h2 className="text-xl font-black mb-4">Token Allocation</h2>
+            <div className="space-y-3">
+              {vault.tokens.map((token, index) => (
+                <div key={token.address} className="brut-card bg-gray-50 p-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src={token.logo}
+                        alt={token.symbol}
+                        className="w-10 h-10 rounded-full"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      <div>
+                        <div className="font-bold">{token.symbol}</div>
+                        <div className="text-sm text-gray-600">
+                          {token.name}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {token.address.slice(0, 8)}...
+                          {token.address.slice(-6)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold">{token.percentage}%</div>
-                    <div className="text-sm text-gray-600">of deposits</div>
-                    {/* <div className="mt-2 p-2 bg-white rounded-lg border">
+                    <div className="text-right">
+                      <div className="text-lg font-bold">
+                        {token.percentage}%
+                      </div>
+                      <div className="text-sm text-gray-600">of deposits</div>
+                      {/* <div className="mt-2 p-2 bg-white rounded-lg border">
                       <div className="text-xs text-gray-500">Balance:</div>
                       <div className="font-bold text-sm">
                         {balancesLoading ? (
@@ -262,121 +275,138 @@ export default function VaultDetails() {
                         )}
                       </div>
                     </div> */}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Sidebar */}
-      <div className="space-y-6">
-        {/* Total Portfolio Value */}
-        <div className="brut-card bg-gradient-to-r from-lime-100 to-yellow-100 p-6">
-          <h3 className="text-lg font-bold mb-2">Portfolio Value</h3>
-          {balancesLoading ? (
-            <p className="text-2xl font-black text-gray-400">Loading...</p>
-          ) : (
-            <div className="space-y-2">
-              {vault.tokens.map(token => {
-                const balance = tokenBalances[token.address] || '0';
-                return balance !== '0' ? (
-                  <div key={token.address} className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <img
-                        src={token.logo}
-                        alt={token.symbol}
-                        className="w-5 h-5 rounded-full"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                      <span className="font-medium">{token.symbol}</span>
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Total Portfolio Value */}
+          <div className="brut-card bg-gradient-to-r from-lime-100 to-yellow-100 p-6">
+            <h3 className="text-lg font-bold mb-2">Portfolio Value</h3>
+            {balancesLoading ? (
+              <p className="text-2xl font-black text-gray-400">Loading...</p>
+            ) : (
+              <div className="space-y-2">
+                {vault.tokens.map((token) => {
+                  const balance = tokenBalances[token.address] || "0";
+                  return balance !== "0" ? (
+                    <div
+                      key={token.address}
+                      className="flex justify-between items-center"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <img
+                          src={token.logo}
+                          alt={token.symbol}
+                          className="w-5 h-5 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                        <span className="font-medium">{token.symbol}</span>
+                      </div>
+                      <span className="font-bold">{balance}</span>
                     </div>
-                    <span className="font-bold">{balance}</span>
-                  </div>
-                ) : null;
-              })}
-              {Object.values(tokenBalances).every(balance => balance === '0') && (
-                <p className="text-gray-600 text-center">No tokens in vault yet</p>
-              )}
+                  ) : null;
+                })}
+                {Object.values(tokenBalances).every(
+                  (balance) => balance === "0"
+                ) && (
+                  <p className="text-gray-600 text-center">
+                    No tokens in vault yet
+                  </p>
+                )}
+              </div>
+            )}
+            <button
+              onClick={() => fetchTokenBalances(true)}
+              disabled={balancesLoading}
+              className="mt-3 w-full brut-btn bg-white text-sm"
+            >
+              {balancesLoading ? "Refreshing..." : "Refresh Balances"}
+            </button>
+          </div>
+
+          {/* Deposit Component */}
+          {connectedAccount && (
+            <VaultDeposit
+              vaultAddress={vault.address}
+              vaultName={vault.name}
+              onSuccess={handleDepositSuccess}
+            />
+          )}
+
+          {/* Auto Deposit Component */}
+          {connectedAccount && (
+            <VaultAutoDeposit
+              vaultAddress={vault.address}
+              vaultName={vault.name}
+            />
+          )}
+
+          {!connectedAccount && (
+            <div className="brut-card bg-yellow-100 p-4">
+              <p className="text-sm font-bold mb-2">Connect Wallet</p>
+              <p className="text-sm">
+                Connect your wallet to deposit to this vault and see balances.
+              </p>
             </div>
           )}
-          <button
-            onClick={() => fetchTokenBalances(true)}
-            disabled={balancesLoading}
-            className="mt-3 w-full brut-btn bg-white text-sm"
-          >
-            {balancesLoading ? "Refreshing..." : "Refresh Balances"}
-          </button>
-        </div>
 
-        {/* Deposit Component */}
-        {connectedAccount && (
-          <VaultDeposit
-            vaultAddress={vault.address}
-            vaultName={vault.name}
-            onSuccess={handleDepositSuccess}
-          />
-        )}
-
-      
-
-        {!connectedAccount && (
-          <div className="brut-card bg-yellow-100 p-4">
-            <p className="text-sm font-bold mb-2">Connect Wallet</p>
-            <p className="text-sm">Connect your wallet to deposit to this vault and see balances.</p>
+          {/* Vault Info */}
+          <div className="brut-card bg-white p-6">
+            <h3 className="text-lg font-bold mb-3">How It Works</h3>
+            <div className="text-sm space-y-2">
+              <p>• Deposits are automatically split across configured tokens</p>
+              <p>• Each deposit triggers swaps via EagleFi DEX</p>
+              <p>• Tokens are held in the vault contract</p>
+              <p>• You maintain ownership of the vault</p>
+            </div>
           </div>
-        )}
 
-        {/* Vault Info */}
-        <div className="brut-card bg-white p-6">
-          <h3 className="text-lg font-bold mb-3">How It Works</h3>
-          <div className="text-sm space-y-2">
-            <p>• Deposits are automatically split across configured tokens</p>
-            <p>• Each deposit triggers swaps via EagleFi DEX</p>
-            <p>• Tokens are held in the vault contract</p>
-            <p>• You maintain ownership of the vault</p>
-          </div>
-        </div>
-
-        {/* Activity  */}
-        {/* <div className="brut-card bg-white p-6">
+          {/* Activity  */}
+          {/* <div className="brut-card bg-white p-6">
           <h3 className="text-lg font-bold mb-3">Recent Activity</h3>
           <div className="text-sm text-gray-600">
             <p>No recent activity</p>
             <p className="mt-2">Activity will appear here after deposits and swaps.</p>
           </div>
         </div> */}
-      </div>
+        </div>
 
-      {/* Withdraw Modal */}
-      {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border-3 border-ink-950 shadow-brut max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-black">Withdraw from {vault.name}</h2>
-                <button
-                  onClick={() => setShowWithdrawModal(false)}
-                  className="text-2xl font-bold hover:bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center"
-                >
-                  ×
-                </button>
+        {/* Withdraw Modal */}
+        {showWithdrawModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border-3 border-ink-950 shadow-brut max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-black">
+                    Withdraw from {vault.name}
+                  </h2>
+                  <button
+                    onClick={() => setShowWithdrawModal(false)}
+                    className="text-2xl font-bold hover:bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <VaultWithdraw
+                  vaultAddress={vault.address}
+                  vaultTokens={vault.tokens}
+                  tokenBalances={tokenBalances}
+                  onSuccess={handleWithdrawSuccess}
+                />
               </div>
-              
-              <VaultWithdraw
-                vaultAddress={vault.address}
-                vaultTokens={vault.tokens}
-                tokenBalances={tokenBalances}
-                onSuccess={handleWithdrawSuccess}
-              />
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </>
   );
 }

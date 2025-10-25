@@ -74,8 +74,6 @@
   box-shadow: 6px 6px 0 0 rgba(14, 14, 16, 0.25);
 }
 
-
-
 /* :root {
   --toastify-color-info: #fffba0 !important;
   --toastify-color-success: #166534 !important;
@@ -150,3 +148,69 @@
 /* .Toastify__toast-body {
   align-items: flex-start !important;
 } */
+
+/* react tostify customization  */
+:root {
+  --toastify-color-info: #f6c955;
+  --toastify-color-success: #166534;
+  --toastify-color-warning: #ffa500;
+  --toastify-color-error: #b91c1c;
+  --toastify-toast-width: 424px;
+  --toastify-font-family: "DM Sans", sans-serif;
+}
+
+.Toastify__toast-container {
+  max-width: 90vw !important;
+}
+
+.Toastify__toast {
+  border: 2px solid #1e1e1e !important;
+  border-bottom-width: 4px !important;
+  border-right-width: 4px !important;
+  border-radius: 35px !important;
+  box-shadow: -8px 8px 16px 0px rgba(133, 133, 133, 0.15) !important;
+  font-family: "DM Sans", sans-serif !important;
+  font-weight: 700 !important;
+  color: #1e1e1e !important;
+  padding: 16px !important;
+  margin-bottom: 1rem !important;
+  background: #f6f6f6 !important;
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--info {
+  background: #fffbe6 !important;
+  border-color: #1e1e1e !important;
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--success {
+  background: #dcfce7 !important;
+  border-color: #1e1e1e !important;
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--warning {
+  background: #fff4e5 !important;
+  border-color: #1e1e1e !important;
+}
+
+.Toastify__toast-theme--colored.Toastify__toast--error {
+  background: #fef2f2 !important;
+  border-color: #1e1e1e !important;
+}
+
+.Toastify__close-button {
+  color: #1e1e1e !important;
+  align-self: flex-start !important;
+}
+
+.Toastify__toast-icon {
+  margin-right: 12px !important;
+}
+
+.Toastify__toast-body {
+  align-items: flex-start !important;
+  padding: 0 !important;
+}
+
+.Toastify__progress-bar {
+  background: rgba(30, 30, 30, 0.2) !important;
+}

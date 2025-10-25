@@ -4,8 +4,9 @@ export default function About() {
       <div className="brut-card bg-white p-6">
         <h1 className="text-3xl font-black">About Massa Piggybank</h1>
         <p className="mt-2">
-          Autonomous micro‑savings powered by Massa’s Autonomous Smart Contracts
-          (ASC) and DeWeb frontends.
+          Autonomous micro‑savings powered by Massa's Autonomous Smart Contracts
+          (ASC) and DeWeb frontends. Deposit USDC and automatically split it across
+          multiple tokens based on your configured percentages.
         </p>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
@@ -20,8 +21,9 @@ export default function About() {
         <div className="brut-card bg-yellow-200 p-6">
           <h3 className="text-xl font-black">Use Cases</h3>
           <ul className="list-disc pl-6 mt-2">
-            <li>DCA strategies on autopilot</li>
-            <li>Recurring payments / subscriptions</li>
+            <li>DCA strategies on autopilot using USDC</li>
+            <li>Automated portfolio rebalancing</li>
+            <li>Split purchases across MAS, ETH, BTC (via WETH, WMAS)</li>
             <li>Savings with time‑locks and splits</li>
           </ul>
         </div>
