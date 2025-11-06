@@ -200,10 +200,6 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
   for (let i = 0; i < tokens.length; i++) {
     const tokenAddress = tokens[i];
 
-    generateEvent(
-      'Swap N°' + i.toString() + ' start for token ' + tokenAddress,
-    );
-
     if (tokenAddress == BASE_TOKEN_ADDRESS) {
       // If the token is BASE_TOKEN, just Keep their percentage in the vault, do nothing
       continue;
@@ -272,10 +268,6 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
 
     const customDeadline = u64.MAX_VALUE;
 
-    generateEvent(
-      'Executing swap N°' + i.toString() + ' for token ' + tokenAddress,
-    );
-
     const amountOut: u256 = eagleSwapRouter.swap(
       swapRoute,
       coinsToUse,
@@ -283,13 +275,7 @@ export function deposit(binaryArgs: StaticArray<u8>): void {
       coinsToUse * swapRoute.length,
     );
 
-    generateEvent(
-      'Exec Swap N°' + i.toString() + ' done for token ' + tokenAddress,
-    );
-
     assert(amountOut > u256.Zero, 'SWAP_FAILED_FOR_' + tokenAddress);
-
-    generateEvent('Swap N°' + i.toString() + ' done for token ' + tokenAddress);
   }
 
   if (!isFromFactory) {

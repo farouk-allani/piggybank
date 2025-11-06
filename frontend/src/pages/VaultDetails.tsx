@@ -5,8 +5,14 @@ import { toast } from "react-toastify";
 import VaultDeposit from "../components/VaultDeposit";
 import VaultWithdraw from "../components/VaultWithdraw";
 import VaultAutoDeposit from "../components/VaultAutoDeposit";
+import CountdownTimer from "../components/CountdownTimer";
 import { AVAILABLE_TOKENS, TokenSelection } from "../lib/types";
-import { getVaultTokenBalances, getVaultTokenSelections } from "../lib/massa";
+import {
+  getVaultTokenBalances,
+  getVaultTokenSelections,
+  getAutoDepositConfig,
+  isAutoDepositEnabled,
+} from "../lib/massa";
 
 interface VaultData {
   address: string;
@@ -30,6 +36,14 @@ export default function VaultDetails() {
   const [balancesLoading, setBalancesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showAutoDepositModal, setShowAutoDepositModal] = useState(false);
+
+  // Auto deposit state
+  const [autoDepositActive, setAutoDepositActive] = useState(false);
+  const [autoDepositNextExecution, setAutoDepositNextExecution] = useState<
+    number | null
+  >(null);
+  const [checkingAutoDeposit, setCheckingAutoDeposit] = useState(true);
 
   useEffect(() => {
     const fetchVaultData = async () => {
@@ -95,6 +109,41 @@ export default function VaultDetails() {
 
     fetchVaultData();
   }, [id, connectedAccount]);
+
+  // Check auto deposit status
+  useEffect(() => {
+    const checkAutoDepositStatus = async () => {
+      if (!vault || !connectedAccount) {
+        setCheckingAutoDeposit(false);
+        return;
+      }
+
+      try {
+        const isEnabled = await isAutoDepositEnabled(
+          connectedAccount,
+          vault.address
+        );
+        setAutoDepositActive(isEnabled);
+
+        if (isEnabled) {
+          // Fetch auto deposit config to get next execution time
+          const config = await getAutoDepositConfig(
+            connectedAccount,
+            vault.address
+          );
+          if (config?.nextExecutionTime) {
+            setAutoDepositNextExecution(config.nextExecutionTime);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking auto deposit status:", error);
+      } finally {
+        setCheckingAutoDeposit(false);
+      }
+    };
+
+    checkAutoDepositStatus();
+  }, [vault, connectedAccount]);
 
   const fetchTokenBalances = async (showToast = false) => {
     if (!vault || !connectedAccount) return;
@@ -197,8 +246,9 @@ export default function VaultDetails() {
           <div className="brut-card bg-white p-6">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-3xl font-black">{vault.name}</h1>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
                 <div className="brut-btn bg-lime-300">{vault.status}</div>
+
                 {connectedAccount && hasTokenBalances && (
                   <button
                     onClick={() => setShowWithdrawModal(true)}
@@ -209,6 +259,64 @@ export default function VaultDetails() {
                 )}
               </div>
             </div>
+
+            {/* Auto Deposit Countdown - Compact Display */}
+            {!checkingAutoDeposit && autoDepositActive && (
+              <div className="mb-4 brut-card bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100 p-3 border-2 border-purple-400">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    {autoDepositNextExecution ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-purple-900">
+                          ⏰ Next Auto Deposit In:
+                        </span>
+                        <CountdownTimer
+                          targetTimestamp={autoDepositNextExecution}
+                          compact={true}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm font-bold text-purple-900 mb-1">
+                          Auto Deposit Active
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Automatic weekly deposits are enabled for this vault
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setShowAutoDepositModal(true)}
+                    className="brut-btn bg-white text-sm px-4 py-2 hover:bg-purple-50 ml-3"
+                  >
+                    ⚙️ Manage
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Auto Deposit CTA - When Not Active */}
+            {!checkingAutoDeposit && !autoDepositActive && connectedAccount && (
+              <div className="mb-4 brut-card bg-gradient-to-r from-lime-50 to-green-50 p-4 border-2 border-lime-400">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-sm text-green-900 mb-1">
+                      🚀 Automate Your Deposits
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Set up weekly recurring deposits to this vault
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAutoDepositModal(true)}
+                    className="brut-btn bg-lime-300 text-sm px-4 py-2 font-bold hover:bg-lime-400"
+                  >
+                    Enable Auto Deposit
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-1">Vault Address:</p>
@@ -341,14 +449,6 @@ export default function VaultDetails() {
             />
           )}
 
-          {/* Auto Deposit Component */}
-          {connectedAccount && (
-            <VaultAutoDeposit
-              vaultAddress={vault.address}
-              vaultName={vault.name}
-            />
-          )}
-
           {!connectedAccount && (
             <div className="brut-card bg-yellow-100 p-4">
               <p className="text-sm font-bold mb-2">Connect Wallet</p>
@@ -401,6 +501,54 @@ export default function VaultDetails() {
                   vaultTokens={vault.tokens}
                   tokenBalances={tokenBalances}
                   onSuccess={handleWithdrawSuccess}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Auto Deposit Modal */}
+        {showAutoDepositModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl border-3 border-ink-950 shadow-brut max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-black">
+                    Auto Deposit Configuration
+                  </h2>
+                  <button
+                    onClick={() => setShowAutoDepositModal(false)}
+                    className="text-2xl font-bold hover:bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <VaultAutoDeposit
+                  vaultAddress={vault.address}
+                  vaultName={vault.name}
+                  onSuccess={() => {
+                    setShowAutoDepositModal(false);
+                    // Refresh auto deposit status
+                    setTimeout(async () => {
+                      const isEnabled = await isAutoDepositEnabled(
+                        connectedAccount,
+                        vault.address
+                      );
+                      setAutoDepositActive(isEnabled);
+                      if (isEnabled) {
+                        const config = await getAutoDepositConfig(
+                          connectedAccount,
+                          vault.address
+                        );
+                        if (config?.nextExecutionTime) {
+                          setAutoDepositNextExecution(config.nextExecutionTime);
+                        }
+                      } else {
+                        setAutoDepositNextExecution(null);
+                      }
+                    }, 2000);
+                  }}
                 />
               </div>
             </div>

@@ -130,7 +130,7 @@ export async function startDCA(
       }
 
       toast.update(toastId, {
-        render: dcaId ? `🎯 DCA #${dcaId} created successfully!` : '🎯 DCA strategy created successfully!',
+        render: dcaId ? ` DCA #${dcaId} created successfully!` : ' DCA strategy created successfully!',
         type: 'success',
         isLoading: false,
         autoClose: 5000,

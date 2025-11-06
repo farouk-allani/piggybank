@@ -93,7 +93,7 @@ await enableAutoDeposit(
   firstSplitterVault,
   '0.1',
   account.address.toString(),
-  64,
+  602800, // 1 week in seconds
 );
 
 const usdcUserBalanceAfter = await usdcTokenContract.balanceOf(

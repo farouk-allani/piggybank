@@ -14,8 +14,8 @@ const client = provider.client;
 
 const events = await provider.getEvents({
   // callerAddress: account.address.toString(),
-  // smartContractAddress: 'AS123VRQFat2EqNC1mhq56HDnJcjgkT9gEjfw766ageHLGviDsjab',
-  callerAddress: 'AS123VRQFat2EqNC1mhq56HDnJcjgkT9gEjfw766ageHLGviDsjab',
+  smartContractAddress: 'AS18yCibaFYQbRsCYAB7VqKsusDoBNxQ3222UFGvEodnVWPjsjEE',
+  // callerAddress: 'AS123VRQFat2EqNC1mhq56HDnJcjgkT9gEjfw766ageHLGviDsjab',
 });
 
 for (const event of events) {

@@ -41,7 +41,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <NavLink to="/dashboard">Dashboard</NavLink>
             <NavLink to="/vault/create">Create Vault</NavLink>
             <NavLink to="/dca/dashboard">DCA</NavLink>
-            <NavLink to="/analytics">Analytics</NavLink>
+            {/* <NavLink to="/analytics">Analytics</NavLink> */}
             <NavLink to="/about">About</NavLink>
             {/* <NavLink to="/settings">Settings</NavLink> */}
           </nav>
@@ -57,7 +57,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
             Built for Massa DeWeb · Autonomous by design
           </p>
           <p className="text-sm mt-1">
-            This app is under developement and working on buildnet network for now.
+            This app is under developement and working on buildnet network for
+            now.
           </p>
         </div>
       </footer>

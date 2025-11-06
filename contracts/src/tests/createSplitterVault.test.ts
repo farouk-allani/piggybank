@@ -27,15 +27,19 @@ const provider = JsonRpcProvider.buildnet(account);
 
 const factoryContract = await deployFactory(provider);
 
-const usdcTokenPercentage = new TokenWithPercentage(USDC_TOKEN_ADDRESS, 20n);
+const btcTokenAddress = 'AS1ZXy3nvqXAMm2w6viAg7frte6cZfJM8hoMvWf4KoKDzvLzYKqE';
+
+// const usdcTokenPercentage = new TokenWithPercentage(USDC_TOKEN_ADDRESS, 0n);
 const wethTokenPercentage = new TokenWithPercentage(WETH_TOKEN_ADDRESS, 50n);
 const wmasTokenPercentage = new TokenWithPercentage(BUILDNET_TOKENS.WMAS, 30n);
+const btcTokenPercentage = new TokenWithPercentage(btcTokenAddress, 20n);
 const usdcTokenContract = new MRC20(provider, USDC_TOKEN_ADDRESS);
 const wethTokenContract = new MRC20(provider, WETH_TOKEN_ADDRESS);
 const wmasTokenContract = new MRC20(provider, BUILDNET_TOKENS.WMAS);
+const btcTokenContract = new MRC20(provider, btcTokenAddress);
 
 const tokensWithPercentage = [
-  usdcTokenPercentage,
+  // btcTokenPercentage,
   wethTokenPercentage,
   wmasTokenPercentage,
 ];
@@ -58,11 +62,12 @@ console.log('User splitter vaults:', splitterVaults);
 if (splitterVaults.length === 0) {
   throw new Error('No splitter vaults found for the user');
 }
+
 console.log('Test passed successfully');
 
 const firstSplitterVault = new SmartContract(provider, splitterVaults[0]);
 
-const amount = '10';
+const amount = '100';
 
 // Increase the Allowance of the splitter vault contract to spend user's USDC
 await increaseTokenAllowance(
@@ -91,3 +96,10 @@ const wmasBalance = await wmasTokenContract.balanceOf(
   firstSplitterVault.address.toString(),
 );
 console.log(`Splitter vault WMAS balance: ${formatUnits(wmasBalance, 9)} WMAS`);
+
+const btcBalance = await btcTokenContract.balanceOf(
+  firstSplitterVault.address.toString(),
+);
+console.log(
+  `Splitter vault BTC-WMAS balance: ${formatUnits(btcBalance, 8)} BTC-WMAS`,
+);

@@ -2,12 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccountStore } from "@massalabs/react-ui-kit";
 import Stepper from "../components/Stepper.tsx";
+import CountdownTimer from "../components/CountdownTimer.tsx";
 import {
   TokenSelection,
   AVAILABLE_TOKENS,
   TokenWithPercentage,
 } from "../lib/types";
-import { createSplitterVault } from "../lib/massa";
+import {
+  createSplitterVault,
+  enableAutoDeposit,
+  approveUSDCSpending,
+} from "../lib/massa";
 
 export default function CreateVault() {
   const [step, setStep] = useState(0);
@@ -21,6 +26,18 @@ export default function CreateVault() {
     }))
   );
 
+  // Auto deposit state
+  const [enableAutoDepositFeature, setEnableAutoDepositFeature] =
+    useState(false);
+  const [autoDepositAmount, setAutoDepositAmount] = useState("");
+  const [autoDepositNextExecution, setAutoDepositNextExecution] = useState<
+    number | null
+  >(null);
+
+  // Auto deposit constants
+  const AUTO_DEPOSIT_PERIOD = 37675; // Fixed period for Massa blockchain
+  const AUTO_DEPOSIT_INTERVAL_SECONDS = 602800; // 37675 * 16 = 602,800 seconds (1 week minus 1 second)
+
   const { connectedAccount } = useAccountStore();
   const navigate = useNavigate();
 
@@ -31,19 +48,28 @@ export default function CreateVault() {
 
   const isValidPercentages = totalPercentage === 100;
   const hasSelectedTokens = tokens.some((token) => token.isSelected);
+  const selectedTokenCount = tokens.filter((token) => token.isSelected).length;
+  const MAX_TOKENS = 2; // Limit due to event limits
 
   const handleTokenToggle = (index: number) => {
-    setTokens((prev) =>
-      prev.map((token, i) =>
+    setTokens((prev) => {
+      const token = prev[index];
+
+      // If trying to select a new token and already at max limit, prevent selection
+      if (!token.isSelected && selectedTokenCount >= MAX_TOKENS) {
+        return prev;
+      }
+
+      return prev.map((token, i) =>
         i === index
           ? {
               ...token,
               isSelected: !token.isSelected,
-              percentage: token.isSelected ? 0 : 25,
+              percentage: token.isSelected ? 0 : 50, // Changed to 50 for 2 tokens
             }
           : token
-      )
-    );
+      );
+    });
   };
 
   const handlePercentageChange = (index: number, percentage: number) => {
@@ -96,17 +122,46 @@ export default function CreateVault() {
         tokensWithPercentage
       );
 
-      if (result.success) {
+      if (result.success && result.vaultAddress) {
         console.log("Vault created successfully:", result.vaultAddress);
 
-        // Navigate directly to the vault if we have its address
-        if (result.vaultAddress) {
-          console.log("New vault address:", result.vaultAddress);
-          navigate(`/vault/${result.vaultAddress}`);
-        } else {
-          // Fallback to dashboard
-          navigate("/dashboard");
+        // Enable auto deposit if requested
+        if (
+          enableAutoDepositFeature &&
+          autoDepositAmount &&
+          parseFloat(autoDepositAmount) > 0
+        ) {
+          console.log("Enabling auto deposit...");
+
+          // Approve USDC spending for auto deposits (large amount for recurring deposits)
+          const totalAmount = (parseFloat(autoDepositAmount) * 1000).toString();
+          const approveResult = await approveUSDCSpending(
+            connectedAccount,
+            result.vaultAddress,
+            totalAmount
+          );
+
+          if (approveResult.success) {
+            // Enable auto deposit
+            const autoDepositResult = await enableAutoDeposit(
+              connectedAccount,
+              result.vaultAddress,
+              autoDepositAmount,
+              AUTO_DEPOSIT_INTERVAL_SECONDS,
+              connectedAccount.address
+            );
+
+            if (autoDepositResult.success) {
+              console.log("Auto deposit enabled successfully");
+            }
+          }
         }
+
+        // Navigate to the vault
+        navigate(`/vault/${result.vaultAddress}`);
+      } else if (result.success) {
+        // Fallback to dashboard if no vault address
+        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Error creating vault:", err);
@@ -166,80 +221,119 @@ export default function CreateVault() {
             </button>
           </div>
 
-          <div className="space-y-3">
-            {tokens.map((token, index) => (
-              <div key={token.address} className="brut-card bg-gray-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <label className="cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={token.isSelected}
-                        onChange={() => handleTokenToggle(index)}
-                        className="sr-only peer"
-                      />
-                      <div
-                        className={`w-6 h-6 border-3 border-ink-950 rounded-lg transition-all ${
-                          token.isSelected ? "bg-lime-300" : "bg-white"
-                        }`}
-                      >
-                        {token.isSelected && (
-                          <svg
-                            className="w-full h-full p-0.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={4}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                    </label>
-                    <img
-                      src={token.logo}
-                      alt={token.symbol}
-                      className="w-8 h-8 rounded-full"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                    <div>
-                      <div className="font-bold flex items-center gap-1">
-                        {token.symbol}
-                      </div>
-                      <div className="text-sm text-gray-600">{token.name}</div>
-                      <div className="text-xs text-gray-500 font-mono">
-                        {token.address.slice(0, 8)}...{token.address.slice(-6)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {token.isSelected && (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={token.percentage}
-                        onChange={(e) =>
-                          handlePercentageChange(
-                            index,
-                            parseInt(e.target.value) || 0
-                          )
-                        }
-                        className="w-20 border-2 border-ink-950 rounded-lg p-2 text-center"
-                      />
-                      <span className="font-bold">%</span>
-                    </div>
-                  )}
-                </div>
+          {/* Warning Message */}
+          <div className="brut-card bg-yellow-50 border-2 border-yellow-400 p-3">
+            <div className="flex items-start gap-2">
+              <span className="text-xl">⚠️</span>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-yellow-900 mb-1">
+                  Token Selection Limit
+                </p>
+                <p className="text-xs text-yellow-800">
+                  Due to event limits, you can currently select a maximum of{" "}
+                  <strong>2 tokens</strong>. We're working on fixing this
+                  limitation soon. Thank you for your patience!
+                </p>
               </div>
-            ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {tokens.map((token, index) => {
+              const isDisabled =
+                !token.isSelected && selectedTokenCount >= MAX_TOKENS;
+
+              return (
+                <div
+                  key={token.address}
+                  className={`brut-card p-4 ${
+                    isDisabled ? "bg-gray-100 opacity-60" : "bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <label
+                        className={
+                          isDisabled ? "cursor-not-allowed" : "cursor-pointer"
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          checked={token.isSelected}
+                          onChange={() => handleTokenToggle(index)}
+                          disabled={isDisabled}
+                          className="sr-only peer"
+                        />
+                        <div
+                          className={`w-6 h-6 border-3 border-ink-950 rounded-lg transition-all ${
+                            token.isSelected
+                              ? "bg-lime-300"
+                              : isDisabled
+                              ? "bg-gray-200"
+                              : "bg-white"
+                          }`}
+                        >
+                          {token.isSelected && (
+                            <svg
+                              className="w-full h-full p-0.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={4}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      </label>
+                      <img
+                        src={token.logo}
+                        alt={token.symbol}
+                        className="w-8 h-8 rounded-full"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                      <div>
+                        <div className="font-bold flex items-center gap-1">
+                          {token.symbol}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {token.name}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {token.address.slice(0, 8)}...
+                          {token.address.slice(-6)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {token.isSelected && (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={token.percentage}
+                          onChange={(e) =>
+                            handlePercentageChange(
+                              index,
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                          className="w-20 border-2 border-ink-950 rounded-lg p-2 text-center"
+                        />
+                        <span className="font-bold">%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div className="brut-card bg-lime-100 p-4">
@@ -262,6 +356,123 @@ export default function CreateVault() {
                 {totalPercentage < 100
                   ? `Need ${100 - totalPercentage}% more to reach 100%`
                   : `Reduce by ${totalPercentage - 100}% to reach 100%`}
+              </p>
+            )}
+          </div>
+
+          {/* Auto Deposit Configuration */}
+          <div className="brut-card bg-gradient-to-r from-lime-100 to-green-100 p-6 border-2 border-lime-400">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                🔄 Auto Deposit (Optional)
+              </h3>
+              <label className="cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enableAutoDepositFeature}
+                  onChange={(e) => {
+                    setEnableAutoDepositFeature(e.target.checked);
+                    if (!e.target.checked) {
+                      setAutoDepositAmount("");
+                      setAutoDepositNextExecution(null);
+                    } else {
+                      // Calculate next execution time (1 week from now)
+                      const nextExecution =
+                        Date.now() + AUTO_DEPOSIT_INTERVAL_SECONDS * 1000;
+                      setAutoDepositNextExecution(nextExecution);
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div
+                  className={`w-14 h-8 border-3 border-ink-950 rounded-full transition-all relative ${
+                    enableAutoDepositFeature ? "bg-lime-400" : "bg-gray-300"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-ink-950 rounded-full transition-transform ${
+                      enableAutoDepositFeature ? "translate-x-6" : ""
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+
+            {enableAutoDepositFeature && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2">
+                    <span className="font-bold">Amount per Deposit (USDC)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={autoDepositAmount}
+                    onChange={(e) => setAutoDepositAmount(e.target.value)}
+                    className="w-full border-3 border-ink-950 rounded-2xl p-3"
+                    placeholder="e.g., 100"
+                  />
+                </div>
+
+                <div className="brut-card bg-white p-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold">Deposit Frequency:</span>
+                    <span className="text-lg font-black text-lime-600">
+                      Every 1 Week
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Fixed interval due to Massa blockchain deferred calls
+                    limitation
+                  </p>
+                </div>
+
+                {autoDepositNextExecution &&
+                  autoDepositAmount &&
+                  parseFloat(autoDepositAmount) > 0 && (
+                    <div className="brut-card bg-white p-4">
+                      <p className="text-sm font-bold mb-2">
+                        ⏰ First Auto Deposit In:
+                      </p>
+                      <CountdownTimer
+                        targetTimestamp={autoDepositNextExecution}
+                        className="mt-2"
+                      />
+                    </div>
+                  )}
+
+                <div className="brut-card bg-yellow-50 p-4 border-2 border-yellow-400">
+                  <h4 className="font-bold text-sm mb-2">
+                    ⚠️ Important Requirements:
+                  </h4>
+                  <ul className="text-xs space-y-1">
+                    <li>
+                      • Requires ~20 MAS for deferred calls (one-time cost)
+                    </li>
+                    <li>
+                      • Ensure sufficient USDC balance for recurring deposits
+                    </li>
+                    <li>
+                      • Auto deposit will continue until disabled or
+                      insufficient funds
+                    </li>
+                    <li>
+                      • You can disable auto deposit anytime from vault details
+                      page
+                    </li>
+                    <li>
+                      • USDC approval will be set for 1000x the deposit amount
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {!enableAutoDepositFeature && (
+              <p className="text-sm text-gray-600">
+                Enable to automatically deposit USDC to your vault every week.
+                You can configure this later from the vault details page.
               </p>
             )}
           </div>
@@ -298,16 +509,82 @@ export default function CreateVault() {
             </div>
           </div>
 
+          {/* Auto Deposit Summary */}
+          {enableAutoDepositFeature &&
+            autoDepositAmount &&
+            parseFloat(autoDepositAmount) > 0 && (
+              <div className="brut-card bg-gradient-to-r from-lime-100 to-green-100 p-6 border-2 border-lime-400">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  Auto Deposit Configuration
+                  <span className="text-xs bg-lime-500 text-white px-2 py-1 rounded-full">
+                    ENABLED
+                  </span>
+                </h3>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-300">
+                    <span className="font-semibold">Deposit Amount:</span>
+                    <span className="font-bold text-lg">
+                      {autoDepositAmount} USDC
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-300">
+                    <span className="font-semibold">Frequency:</span>
+                    <span className="font-bold">Every 1 Week</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2 border-b border-gray-300">
+                    <span className="font-semibold">MAS Required:</span>
+                    <span className="font-bold text-orange-600">~20 MAS</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-2">
+                    <span className="font-semibold">Status:</span>
+                    <span className="font-bold text-lime-600">
+                      Will activate after vault creation
+                    </span>
+                  </div>
+                </div>
+
+                {autoDepositNextExecution && (
+                  <div className="mt-4 brut-card bg-white p-4">
+                    <p className="text-sm font-bold mb-2">
+                      ⏰ First Auto Deposit In:
+                    </p>
+                    <CountdownTimer
+                      targetTimestamp={autoDepositNextExecution}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
           <div className="brut-card bg-yellow-100 p-4">
             <h3 className="font-bold mb-2">⚠️ Important Information</h3>
             <ul className="text-sm space-y-1">
               <li>• This will create a new vault on the Massa blockchain</li>
               <li>• Initial deployment cost: ~5 MAS for gas</li>
+              {enableAutoDepositFeature &&
+                autoDepositAmount &&
+                parseFloat(autoDepositAmount) > 0 && (
+                  <li className="text-orange-600 font-semibold">
+                    • Additional ~20 MAS required for auto deposit activation
+                  </li>
+                )}
               <li>• Deposits must be made in USDC (6 decimals)</li>
               <li>
                 • USDC will be swapped to your selected tokens via EagleFi DEX
               </li>
               <li>• You will be the owner of this vault</li>
+              {enableAutoDepositFeature &&
+                autoDepositAmount &&
+                parseFloat(autoDepositAmount) > 0 && (
+                  <li className="text-orange-600 font-semibold">
+                    • Ensure sufficient USDC balance for recurring auto deposits
+                  </li>
+                )}
               <li className="text-blue-600 font-semibold">
                 💡 Bridge USDC from Ethereum to deposit
               </li>

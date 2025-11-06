@@ -809,3 +809,99 @@ export async function isAutoDepositEnabled(
     return false;
   }
 }
+
+// Get auto deposit configuration from vault
+export async function getAutoDepositConfig(
+  connectedAccount: any,
+  vaultAddress: string
+): Promise<{
+  enabled: boolean;
+  amountPerPeriod: string;
+  periodFrequency: number;
+  nextExecutionTime?: number;
+} | null> {
+  try {
+    console.log('Getting auto deposit config for vault:', vaultAddress);
+
+    // Check if auto deposit is enabled first
+    const enabled = await isAutoDepositEnabled(connectedAccount, vaultAddress);
+
+    if (!enabled) {
+      return { enabled: false, amountPerPeriod: '0', periodFrequency: 0 };
+    }
+
+    // Read configuration from storage
+    // Keys: 'pfq' (period frequency), 'aep' (amount each period)
+    const values = await connectedAccount.readStorage(
+      vaultAddress,
+      ['pfq', 'aep'],
+      false
+    );
+
+    console.log('Config storage values:', values);
+
+    if (!values || values.length < 2) {
+      console.log('Incomplete config data');
+      return null;
+    }
+
+    // Parse period frequency (u64)
+    let periodFrequencyBytes: Uint8Array;
+    if (values[0] instanceof Uint8Array) {
+      periodFrequencyBytes = values[0];
+    } else if (values[0] && typeof values[0] === 'object') {
+      periodFrequencyBytes = values[0].final_value || values[0].candidate_value || values[0];
+    } else {
+      console.log('Period frequency not in expected format');
+      return null;
+    }
+
+    // Convert bytes to u64 (little-endian)
+    const periodFrequency = Number(
+      new DataView(periodFrequencyBytes.buffer).getBigUint64(0, true)
+    );
+
+    // Parse amount per period (u256)
+    let amountBytes: Uint8Array;
+    if (values[1] instanceof Uint8Array) {
+      amountBytes = values[1];
+    } else if (values[1] && typeof values[1] === 'object') {
+      amountBytes = values[1].final_value || values[1].candidate_value || values[1];
+    } else {
+      console.log('Amount not in expected format');
+      return null;
+    }
+
+    // Convert u256 bytes to bigint (little-endian)
+    let amountBigInt = 0n;
+    for (let i = 0; i < amountBytes.length; i++) {
+      amountBigInt += BigInt(amountBytes[i]) << BigInt(i * 8);
+    }
+
+    // Convert to readable format (USDC has 6 decimals)
+    const amountPerPeriod = (Number(amountBigInt) / 1e6).toString();
+
+    // Calculate next execution time
+    // Period frequency is in Massa periods (16 seconds each)
+    const intervalInSeconds = periodFrequency * 16;
+    const nextExecutionTime = Date.now() + (intervalInSeconds * 1000);
+
+    console.log('Auto deposit config:', {
+      enabled,
+      amountPerPeriod,
+      periodFrequency,
+      intervalInSeconds,
+      nextExecutionTime
+    });
+
+    return {
+      enabled,
+      amountPerPeriod,
+      periodFrequency,
+      nextExecutionTime
+    };
+  } catch (error) {
+    console.error('Error getting auto deposit config:', error);
+    return null;
+  }
+}

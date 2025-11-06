@@ -15,6 +15,7 @@ import { TokenWithPercentage } from './structs/token';
 import { wrapMasToWMAS } from './lib/wrapping';
 import {
   BASE_TOKEN_ADDRESS,
+  BTC_TOKEN_ADDRESS,
   USDC_TOKEN_ADDRESS,
   WETH_TOKEN_ADDRESS,
   WMAS_TOKEN_ADDRESS,
@@ -70,6 +71,11 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
   tokensPoolsMap.set(
     WETH_TOKEN_ADDRESS,
     'AS184uE7Eq11Sg3KeQBD7jV9DkC75T3U5P6UEU1WEEZ7FHiesjsh', // WETH/WMAS pool
+  );
+
+  tokensPoolsMap.set(
+    BTC_TOKEN_ADDRESS,
+    'AS12FBMuayzXnd4NymGbwCYi4YRZiVJsjek3R8ppS2SSGLBMQv4FK', // BTC/WMAS pool
   );
 
   // Set the contract owner

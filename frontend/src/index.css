@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* :root {
   color-scheme: light dark;
-}
+} */
 
 /* Neo‑Brutalist helpers */
 .bento-bg {
