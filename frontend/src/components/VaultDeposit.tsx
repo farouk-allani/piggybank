@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAccountStore } from "@massalabs/react-ui-kit";
-import { depositToVault, approveUSDCSpending, getUserUSDCBalance } from "../lib/massa";
+import {
+  depositToVault,
+  approveUSDCSpending,
+  getUserUSDCBalance,
+} from "../lib/massa";
 
 interface VaultDepositProps {
   vaultAddress: string;
@@ -8,7 +12,11 @@ interface VaultDepositProps {
   onSuccess?: () => void;
 }
 
-export default function VaultDeposit({ vaultAddress, vaultName, onSuccess }: VaultDepositProps) {
+export default function VaultDeposit({
+  vaultAddress,
+  vaultName,
+  onSuccess,
+}: VaultDepositProps) {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [usdcBalance, setUsdcBalance] = useState<string>("0");
@@ -20,10 +28,13 @@ export default function VaultDeposit({ vaultAddress, vaultName, onSuccess }: Vau
   useEffect(() => {
     const fetchBalance = async () => {
       if (!connectedAccount) return;
-      
+
       setLoadingBalance(true);
       try {
-        const balance = await getUserUSDCBalance(connectedAccount, connectedAccount.address);
+        const balance = await getUserUSDCBalance(
+          connectedAccount,
+          connectedAccount.address
+        );
         setUsdcBalance(balance);
       } catch (error) {
         console.error("Error fetching USDC balance:", error);
@@ -49,22 +60,33 @@ export default function VaultDeposit({ vaultAddress, vaultName, onSuccess }: Vau
     try {
       // Approve USDC spending first
       console.log("Approving USDC spending...");
-      const approvalResult = await approveUSDCSpending(connectedAccount, vaultAddress, amount);
-      
+      const approvalResult = await approveUSDCSpending(
+        connectedAccount,
+        vaultAddress,
+        amount
+      );
+
       if (!approvalResult.success) {
         setLoading(false);
         return;
       }
-      
+
       console.log("USDC spending approved successfully");
 
       // Now proceed with the deposit
-      const result = await depositToVault(connectedAccount, vaultAddress, amount);
+      const result = await depositToVault(
+        connectedAccount,
+        vaultAddress,
+        amount
+      );
 
       if (result.success) {
         setAmount("");
         // Refresh USDC balance
-        const newBalance = await getUserUSDCBalance(connectedAccount, connectedAccount.address);
+        const newBalance = await getUserUSDCBalance(
+          connectedAccount,
+          connectedAccount.address
+        );
         setUsdcBalance(newBalance);
         onSuccess?.();
       }
@@ -78,10 +100,10 @@ export default function VaultDeposit({ vaultAddress, vaultName, onSuccess }: Vau
   return (
     <div className="brut-card bg-white p-4">
       <h3 className="font-bold text-lg mb-3">Deposit to {vaultName}</h3>
-      
+
       <div className="space-y-3">
         {/* USDC Balance Display */}
-        <div className="brut-card bg-blue-50 p-3">
+        <div className=" p-3 pl-0">
           <div className="flex justify-between items-center">
             <span className="text-sm font-bold">Your USDC Balance:</span>
             <span className="text-lg font-bold text-blue-600">
@@ -110,19 +132,24 @@ export default function VaultDeposit({ vaultAddress, vaultName, onSuccess }: Vau
 
         <button
           onClick={handleDeposit}
-          disabled={!connectedAccount || !amount || parseFloat(amount) <= 0 || loading || parseFloat(usdcBalance) === 0}
+          disabled={
+            !connectedAccount ||
+            !amount ||
+            parseFloat(amount) <= 0 ||
+            loading ||
+            parseFloat(usdcBalance) === 0
+          }
           className="w-full brut-btn bg-lime-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
-          {loading
-            ? "Processing..."
-            : "Approve & Deposit USDC"
-          }
+          {loading ? "Processing..." : "Approve & Deposit USDC"}
         </button>
       </div>
 
       <div className="mt-3 text-xs text-gray-600 space-y-1">
         <p>• Deposits are made in USDC</p>
-        <p>• Your deposit will be automatically split across configured tokens</p>
+        <p>
+          • Your deposit will be automatically split across configured tokens
+        </p>
         <p>• Swapping happens via EagleFi DEX</p>
         <p>• Two transactions required: USDC approval + deposit</p>
         <p className="text-blue-600 font-semibold">

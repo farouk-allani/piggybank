@@ -13,6 +13,7 @@ import {
   enableAutoDeposit,
   approveUSDCSpending,
 } from "../lib/massa";
+import { createMultiSigVault } from "../lib/multiSigVault";
 
 export default function CreateVault() {
   const [step, setStep] = useState(0);
@@ -25,6 +26,11 @@ export default function CreateVault() {
       isSelected: false,
     }))
   );
+
+  // Multi-sig state
+  const [isMultiSig, setIsMultiSig] = useState(false);
+  const [signers, setSigners] = useState<string[]>(['', '']);
+  const [threshold, setThreshold] = useState(2);
 
   // Auto deposit state
   const [enableAutoDepositFeature, setEnableAutoDepositFeature] =
@@ -117,10 +123,25 @@ export default function CreateVault() {
             new TokenWithPercentage(token.address, BigInt(token.percentage))
         );
 
-      const result = await createSplitterVault(
-        connectedAccount,
-        tokensWithPercentage
-      );
+      let result;
+
+      if (isMultiSig) {
+        // Create multi-sig vault
+        result = await createMultiSigVault(
+          connectedAccount,
+          signers.filter(s => s.trim().length > 0),
+          threshold,
+          tokensWithPercentage,
+          vaultName
+        );
+      } else {
+        // Create regular splitter vault
+        result = await createSplitterVault(
+          connectedAccount,
+          tokensWithPercentage,
+          vaultName
+        );
+      }
 
       if (result.success && result.vaultAddress) {
         console.log("Vault created successfully:", result.vaultAddress);
@@ -191,6 +212,91 @@ export default function CreateVault() {
             />
           </label>
 
+          {/* Multi-Sig Toggle */}
+          <div className="brut-card bg-purple-50 p-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isMultiSig}
+                onChange={(e) => setIsMultiSig(e.target.checked)}
+                className="w-5 h-5 border-3 border-ink-950 rounded"
+              />
+              <div>
+                <span className="font-bold">Enable Multi-Signature</span>
+                <p className="text-xs text-gray-600">
+                  Require multiple approvals for withdrawals (perfect for families, couples, or teams)
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* Multi-Sig Configuration */}
+          {isMultiSig && (
+            <div className="brut-card bg-purple-100 p-4 space-y-3">
+              <h3 className="font-bold">Multi-Sig Configuration</h3>
+
+              <div>
+                <label className="block mb-2">
+                  <span className="font-bold text-sm">Signers (2-5 addresses)</span>
+                </label>
+                {signers.map((signer, index) => (
+                  <div key={index} className="mb-2">
+                    <input
+                      value={signer}
+                      onChange={(e) => {
+                        const newSigners = [...signers];
+                        newSigners[index] = e.target.value;
+                        setSigners(newSigners);
+                      }}
+                      className="w-full border-2 border-ink-950 rounded-lg p-2 text-sm"
+                      placeholder={`Signer ${index + 1} address`}
+                    />
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  {signers.length < 5 && (
+                    <button
+                      onClick={() => setSigners([...signers, ''])}
+                      className="brut-btn bg-purple-200 text-sm"
+                    >
+                      + Add Signer
+                    </button>
+                  )}
+                  {signers.length > 2 && (
+                    <button
+                      onClick={() => setSigners(signers.slice(0, -1))}
+                      className="brut-btn bg-red-200 text-sm"
+                    >
+                      - Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-2">
+                  <span className="font-bold text-sm">Approval Threshold</span>
+                  <p className="text-xs text-gray-600">
+                    Number of signatures required for withdrawals
+                  </p>
+                </label>
+                <select
+                  value={threshold}
+                  onChange={(e) => setThreshold(Number(e.target.value))}
+                  className="w-full border-2 border-ink-950 rounded-lg p-2"
+                >
+                  {Array.from({ length: signers.filter(s => s.trim()).length }, (_, i) => i + 1)
+                    .filter(n => n >= 2)
+                    .map(n => (
+                      <option key={n} value={n}>
+                        {n} of {signers.filter(s => s.trim()).length}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           <div className="brut-card bg-blue-50 p-4">
             <h3 className="font-bold mb-2">About Splitter Vaults</h3>
             <p className="text-sm mb-2">
@@ -199,6 +305,11 @@ export default function CreateVault() {
               Each deposit will be split and swapped into your chosen tokens via
               EagleFi DEX.
             </p>
+            {isMultiSig && (
+              <p className="text-sm mb-2 text-purple-700 font-semibold">
+                🔐 With multi-sig enabled, withdrawals will require {threshold} approvals from the signers.
+              </p>
+            )}
             <p className="text-xs text-blue-600 font-semibold">
               💡 You'll need USDC to deposit into your vault. Make sure to
               bridge USDC to Massa network.

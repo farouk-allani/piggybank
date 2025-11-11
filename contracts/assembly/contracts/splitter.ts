@@ -15,6 +15,7 @@ import {
 import {
   Args,
   boolToByte,
+  bytesToString,
   bytesToU256,
   bytesToU64,
   byteToBool,
@@ -51,6 +52,7 @@ const allTokensAddressesKey: StaticArray<u8> =
   stringToBytes('allTokensAddresses');
 const createdAtKey: StaticArray<u8> = stringToBytes('createdAt');
 const autoDepositEnabledKey: StaticArray<u8> = stringToBytes('adek');
+const vaultNameKey: StaticArray<u8> = stringToBytes('vaultName');
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.
@@ -76,6 +78,10 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
     .nextString()
     .expect('eaglefi router address expected');
 
+  const vaultName = args
+    .nextString()
+    .expect('vault name expected');
+
   const allTokensAddresses = new Array<string>();
 
   // Store the tokens and their percentages in the persistent map
@@ -98,6 +104,9 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
 
   // Store the creation timestamp
   Storage.set(createdAtKey, u64ToBytes(Context.timestamp()));
+
+  // Store the vault name
+  Storage.set(vaultNameKey, stringToBytes(vaultName));
 
   // INcrease Max allownace of WMAS for the eaglefi router
   const baseToken = new IMRC20(new Address(BASE_TOKEN_ADDRESS));
@@ -510,4 +519,13 @@ export function disableAutoDeposit(): void {
 
   // End Reentrancy Guard
   ReentrancyGuard.endNonReentrant();
+}
+
+/**
+ * Get the vault name
+ * @returns The vault name as serialized string
+ */
+export function getVaultName(): StaticArray<u8> {
+  const vaultName = bytesToString(Storage.get(vaultNameKey));
+  return new Args().add(vaultName).serialize();
 }

@@ -5,10 +5,6 @@ import {
   TokenSelection,
   AVAILABLE_TOKENS,
   USDC_DECIMALS,
-  USDC_TOKEN_ADDRESS,
-  WMAS_TOKEN_ADDRESS,
-  WETH_TOKEN_ADDRESS,
-  WBTC_TOKEN_ADDRESS,
   BASE_TOKEN_ADDRESS
 } from './types';
 
@@ -28,6 +24,7 @@ function getFactoryContract(connectedAccount: any): SmartContract {
 export async function createSplitterVault(
   connectedAccount: any,
   tokensWithPercentage: TokenWithPercentage[],
+  vaultName: string,
   initialCoins: string = '0.1'
 ): Promise<{ success: boolean; vaultAddress?: string; error?: string }> {
   const toastId = toast.loading('Creating splitter vault...');
@@ -40,11 +37,16 @@ export async function createSplitterVault(
     const args = new Args()
       .addSerializableObjectArray(tokensWithPercentage)
       .addU64(parseMas(initialCoins))
+      .addString(vaultName)
       .serialize();
 
     // Call the smart contract function
+    // Need to send enough coins for:
+    // - Operation fee (~0.1 MAS)
+    // - Factory to deploy new vault contract (~0.1 MAS)
+    // - Initial coins for the vault (initialCoins parameter)
     const operation = await contract.call('createSplitterVault', args, {
-      coins: parseMas('5'), // Operation fee
+      coins: parseMas('10'), // Enough for operation fee + vault deployment + initial vault coins
     });
 
     console.log(`Operation ID: ${operation.id}`);
@@ -367,19 +369,9 @@ export async function getVaultTokenBalances(
 
         console.log(`Balance as BigInt:`, balanceBigInt);
 
-        // Use correct decimal places for each token
-        let decimals = 18; // Default to 18 decimals
-
-        // Set specific decimals for each token
-        if (tokenAddress === WMAS_TOKEN_ADDRESS) {
-          decimals = 9; // WMAS uses 9 decimals
-        } else if (tokenAddress === USDC_TOKEN_ADDRESS) {
-          decimals = 6; // USDC uses 6 decimals
-        } else if (tokenAddress === WETH_TOKEN_ADDRESS) {
-          decimals = 18; // WETH uses 18 decimals
-        } else if (tokenAddress === WBTC_TOKEN_ADDRESS) {
-          decimals = 8; // WBTC uses 8 decimals
-        }
+        // Get decimals from AVAILABLE_TOKENS configuration
+        const tokenInfo = AVAILABLE_TOKENS.find(t => t.address === tokenAddress);
+        const decimals = tokenInfo?.decimals || 18; // Default to 18 decimals if token not found
 
         console.log(`Using ${decimals} decimals for token ${tokenAddress}`);
 
@@ -417,17 +409,9 @@ export async function withdrawFromVault(
   try {
     const vaultContract = new SmartContract(connectedAccount, vaultAddress);
 
-    // Use correct decimal places for each token
-    let decimals = 18; // Default to 18 decimals
-
-    // Set specific decimals for each token
-    if (tokenAddress === WMAS_TOKEN_ADDRESS) {
-      decimals = 9; // WMAS uses 9 decimals
-    } else if (tokenAddress === USDC_TOKEN_ADDRESS) {
-      decimals = 6; // USDC uses 6 decimals
-    } else if (tokenAddress === WETH_TOKEN_ADDRESS) {
-      decimals = 18; // WETH uses 18 decimals
-    }
+    // Get decimals from AVAILABLE_TOKENS configuration
+    const tokenInfo = AVAILABLE_TOKENS.find(t => t.address === tokenAddress);
+    const decimals = tokenInfo?.decimals || 18; // Default to 18 decimals if token not found
 
     // Convert amount to token's smallest unit using correct decimals
     const amountInSmallestUnit = BigInt(Math.floor(parseFloat(amount) * (10 ** decimals)));

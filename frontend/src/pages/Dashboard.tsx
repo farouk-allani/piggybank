@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useAccountStore } from "@massalabs/react-ui-kit";
 import { getUserSplitterVaults, getVaultTokenSelections } from "../lib/massa";
+import { isMultiSigVault, getVaultName } from "../lib/multiSigVault";
 import { AVAILABLE_TOKENS } from "../lib/types";
 
 interface UserVault {
@@ -11,6 +12,8 @@ interface UserVault {
   status: string;
   tokenCount: number;
   balance: string;
+  isMultiSig: boolean;
+  tokenLogos: string[];
 }
 
 export default function Dashboard() {
@@ -30,70 +33,93 @@ export default function Dashboard() {
 
     let toastId: any = null;
     if (showToast) {
-      toastId = toast.loading('Fetching your vaults...');
+      toastId = toast.loading("Fetching your vaults...");
     }
 
     try {
-      console.log('Fetching vaults...');
-      
+      console.log("Fetching vaults...");
+
       const vaultAddresses = await getUserSplitterVaults(
         connectedAccount,
         connectedAccount.address
       );
 
-      console.log('Vault addresses received:', vaultAddresses);
+      console.log("Vault addresses received:", vaultAddresses);
 
       // Transform vault addresses into vault objects with real token count
       const userVaults: UserVault[] = [];
-      
+
       for (let i = 0; i < vaultAddresses.length; i++) {
         const address = vaultAddresses[i];
-        
+
         try {
-          // Get real token count for each vault
-          const tokens = await getVaultTokenSelections(connectedAccount, address);
-          const tokenCount = tokens.length > 0 ? tokens.length : AVAILABLE_TOKENS.length; // Fallback to 3 if no tokens found
-          
+          // Check if multi-sig and get vault name
+          const isMS = await isMultiSigVault(connectedAccount, address);
+          const vaultName = await getVaultName(connectedAccount, address);
+
+          // Get real token count and logos for each vault
+          const tokens = await getVaultTokenSelections(
+            connectedAccount,
+            address
+          );
+          const tokenCount =
+            tokens.length > 0 ? tokens.length : AVAILABLE_TOKENS.length;
+
+          // Get token logos from the actual vault tokens
+          const tokenLogos =
+            tokens.length > 0
+              ? tokens.slice(0, 3).map((t) => t.logo)
+              : AVAILABLE_TOKENS.slice(0, 3).map((t) => t.logo);
+
           userVaults.push({
             address,
-            name: `Splitter Vault #${i + 1}`,
+            name:
+              vaultName ||
+              (isMS ? `Multi-Sig Vault #${i + 1}` : `Splitter Vault #${i + 1}`),
             status: "Active",
             tokenCount,
             balance: "0.00",
+            isMultiSig: isMS,
+            tokenLogos,
           });
         } catch (error) {
-          console.error(`Error fetching token count for vault ${address}:`, error);
+          console.error(`Error fetching vault data for ${address}:`, error);
           // Fallback vault data
           userVaults.push({
             address,
-            name: `Splitter Vault #${i + 1}`,
+            name: `Vault #${i + 1}`,
             status: "Active",
-            tokenCount: AVAILABLE_TOKENS.length, // Fallback to 3
+            tokenCount: AVAILABLE_TOKENS.length,
             balance: "0.00",
+            isMultiSig: false,
+            tokenLogos: AVAILABLE_TOKENS.slice(0, 3).map((t) => t.logo),
           });
         }
       }
 
-      console.log('Setting vaults with real token counts:', userVaults);
+      console.log("Setting vaults with real token counts:", userVaults);
       setVaults(userVaults);
 
       if (toastId) {
         toast.update(toastId, {
-          render: `📦 Found ${userVaults.length} vault${userVaults.length === 1 ? '' : 's'}`,
-          type: 'success',
+          render: `📦 Found ${userVaults.length} vault${
+            userVaults.length === 1 ? "" : "s"
+          }`,
+          type: "success",
           isLoading: false,
           autoClose: 3000,
         });
       }
     } catch (err) {
-      console.error('Error fetching user vaults:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch vaults';
+      console.error("Error fetching user vaults:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch vaults";
       setError(errorMessage);
-      
+
       if (toastId) {
         toast.update(toastId, {
           render: `Failed to fetch vaults: ${errorMessage}`,
-          type: 'error',
+          type: "error",
           isLoading: false,
           autoClose: 5000,
         });
@@ -130,7 +156,8 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-black">My Vaults</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Connected: {connectedAccount.address.slice(0, 8)}...{connectedAccount.address.slice(-6)}
+            Connected: {connectedAccount.address.slice(0, 8)}...
+            {connectedAccount.address.slice(-6)}
           </p>
         </div>
         <div className="flex gap-3">
@@ -161,7 +188,9 @@ export default function Dashboard() {
         <div className="brut-card bg-white p-8 text-center">
           <h2 className="text-xl font-bold mb-4">No Vaults Yet</h2>
           <p className="text-gray-600 mb-4">
-            You haven't created any splitter vaults yet. Create your first vault to start automatically splitting your deposits across multiple tokens!
+            You haven't created any splitter vaults yet. Create your first vault
+            to start automatically splitting your deposits across multiple
+            tokens!
           </p>
           <Link to="/vault/create" className="brut-btn bg-lime-300">
             Create Your First Vault
@@ -169,7 +198,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {vaults.map((vault, index) => (
+          {vaults.map((vault) => (
             <Link
               key={vault.address}
               to={`/vault/${vault.address}`}
@@ -177,29 +206,34 @@ export default function Dashboard() {
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-bold">{vault.name}</h3>
-                <span className="brut-btn bg-lime-200 text-xs">
-                  {vault.status}
-                </span>
+                {vault.isMultiSig && (
+                  <span className="brut-btn bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1">
+                    MULTI-SIG
+                  </span>
+                )}
               </div>
-              
+
               <div className="space-y-2 mb-4">
                 <div className="flex items-center space-x-1">
-                  <span className="text-sm font-semibold text-gray-600">Tokens:</span>
+                  <span className="text-sm font-semibold text-gray-600">
+                    Tokens:
+                  </span>
                   <div className="flex -space-x-1">
-                    {AVAILABLE_TOKENS.slice(0, 3).map((token, i) => (
+                    {vault.tokenLogos.map((logo, idx) => (
                       <img
-                        key={token.symbol}
-                        src={token.logo}
-                        alt={token.symbol}
+                        key={idx}
+                        src={logo}
+                        alt="Token"
                         className="w-5 h-5 rounded-full border border-white"
-                        title={token.symbol}
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.style.display = "none";
                         }}
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-gray-600">{vault.tokenCount} configured</span>
+                  <span className="text-sm text-gray-600">
+                    {vault.tokenCount} configured
+                  </span>
                 </div>
                 <p className="text-sm text-gray-600">
                   <span className="font-semibold">Address:</span>{" "}
@@ -232,7 +266,10 @@ export default function Dashboard() {
           <h3 className="font-bold mb-2">💡 Quick Tips</h3>
           <ul className="text-sm space-y-1">
             <li>• Click on any vault to view details and make deposits</li>
-            <li>• Deposits are automatically split based on your configured percentages</li>
+            <li>
+              • Deposits are automatically split based on your configured
+              percentages
+            </li>
             <li>• All swaps happen via EagleFi DEX for the best rates</li>
             <li>• You maintain full ownership of your vaults and funds</li>
           </ul>

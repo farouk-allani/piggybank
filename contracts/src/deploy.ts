@@ -27,7 +27,8 @@ const tokensWithPercentage: TokenWithPercentage[] = []; // No initial tokens wit
 const splitterArgs = new Args()
   .addSerializableObjectArray(tokensWithPercentage)
   .addString(provider.address)
-  .addString(eaglefiRouterAddress);
+  .addString(eaglefiRouterAddress)
+  .addString('Template Splitter Vault'); // Vault name
 
 const splitterContract = await SmartContract.deploy(
   provider,

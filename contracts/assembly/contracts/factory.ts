@@ -21,6 +21,7 @@ import {
   WMAS_TOKEN_ADDRESS,
 } from './storage';
 import { ISplitter } from './interfaces/ISplitter';
+import { IMultiSigVault } from './interfaces/IMultiSigVault';
 import { u256 } from 'as-bignum/assembly';
 import { PersistentMap } from '@massalabs/massa-as-sdk/assembly/collections';
 import { onlyOwner } from './lib/ownership';
@@ -33,6 +34,7 @@ const tokensPoolsMap = new PersistentMap<string, string>('tpools');
 // Storage key for eaglefi swap router address
 const EAGLE_SWAP_ROUTER_ADDRESS = 'ESAPR';
 const SPLITTER_TEMPLATE_ADDRESS_KEY = 'STVA';
+const MULTISIG_TEMPLATE_ADDRESS_KEY = 'MSTVA';
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.
@@ -89,6 +91,8 @@ export function constructor(binaryArgs: StaticArray<u8>): void {
  * Create a splitter vault that will split the deposited amount between the provided tokens according to their percentage.
  * @param binaryArgs - Arguments serialized with Args
  * - tokensWithPercentage: TokenWithPercentage[]
+ * - initCoins: u64
+ * - vaultName: string
  */
 export function createSplitterVault(binaryArgs: StaticArray<u8>): void {
   ReentrancyGuard.nonReentrant();
@@ -100,6 +104,8 @@ export function createSplitterVault(binaryArgs: StaticArray<u8>): void {
     .expect('tokens with percentage expected');
 
   const initCoins = args.nextU64().expect('Splitter initial coins expected');
+
+  const vaultName = args.nextString().expect('Vault name expected');
 
   const caller = Context.caller();
 
@@ -128,6 +134,7 @@ export function createSplitterVault(binaryArgs: StaticArray<u8>): void {
     caller,
     eaglefiRouterAddress,
     initCoins,
+    vaultName,
   );
 
   // Store the unique key for the user and the vault
@@ -169,6 +176,8 @@ export function createAndDepositSplitterVault(
 
   const deadline = args.nextU64().expect('deadline expected');
 
+  const vaultName = args.nextString().expect('Vault name expected');
+
   const caller = Context.caller();
 
   // Get the splitter template address from storage and its bytecode
@@ -196,6 +205,7 @@ export function createAndDepositSplitterVault(
     caller,
     eaglefiRouterAddress,
     initCoins,
+    vaultName,
   );
 
   // Store the unique key for the user and the vault
@@ -308,5 +318,106 @@ export function setSplitterTemplateAddress(binaryArgs: StaticArray<u8>): void {
 export function getSplitterTemplateAddress(): StaticArray<u8> {
   const address = Storage.get(SPLITTER_TEMPLATE_ADDRESS_KEY);
   assert(address != null, 'SPLITTER_TEMPLATE_NOT_SET');
+  return stringToBytes(address);
+}
+
+/**
+ * Create a multi-signature vault
+ * @param binaryArgs - Arguments serialized with Args
+ * - signers: string[] - Array of signer addresses
+ * - threshold: u8 - Number of approvals required
+ * - tokensWithPercentage: TokenWithPercentage[] - Token allocation percentages
+ * - vaultName: string - Name of the vault
+ * - initCoins: u64 - Initial coins to send to the vault
+ */
+export function createMultiSigVault(binaryArgs: StaticArray<u8>): void {
+  ReentrancyGuard.nonReentrant();
+
+  const args = new Args(binaryArgs);
+
+  const signers = args.nextStringArray().expect('signers expected');
+  const threshold = args.nextU8().expect('threshold expected');
+  const tokensWithPercentage = args
+    .nextSerializableObjectArray<TokenWithPercentage>()
+    .expect('tokens with percentage expected');
+  const vaultName = args.nextString().expect('vault name expected');
+  const initCoins = args.nextU64().expect('init coins expected');
+
+  const caller = Context.caller();
+
+  // Get the multi-sig template bytecode
+  const multiSigTemplateAddress = Storage.get(MULTISIG_TEMPLATE_ADDRESS_KEY);
+  assert(multiSigTemplateAddress.length > 0, 'MULTISIG_TEMPLATE_NOT_SET');
+
+  const multiSigVaultByteCode = getBytecodeOf(
+    new Address(multiSigTemplateAddress),
+  );
+
+  // Create the multi-sig vault contract
+  const vaultAddress = createSC(multiSigVaultByteCode);
+
+  // Get the eaglefi router address
+  const eaglefiRouterAddress = new Address(
+    Storage.get(EAGLE_SWAP_ROUTER_ADDRESS),
+  );
+
+  // Initialize the multi-sig vault
+  const multiSigVault = new IMultiSigVault(vaultAddress);
+  multiSigVault.init(
+    signers,
+    threshold,
+    tokensWithPercentage,
+    vaultName,
+    eaglefiRouterAddress.toString(),
+    initCoins,
+  );
+
+  // Store vault for each signer
+  for (let i = 0; i < signers.length; i++) {
+    const userVaultKey = generateSplitterUserKey(
+      signers[i],
+      vaultAddress.toString(),
+    );
+    Storage.set(userVaultKey, '1');
+  }
+
+  // Emit creation event
+  generateEvent(
+    createEvent('CREATE_MULTISIG_VAULT', [
+      vaultAddress.toString(),
+      caller.toString(),
+      signers.join(','),
+      threshold.toString(),
+    ]),
+  );
+
+  ReentrancyGuard.endNonReentrant();
+}
+
+/**
+ * Set the multi-sig template address (only owner)
+ * @param binaryArgs - Template address
+ */
+export function setMultiSigTemplateAddress(binaryArgs: StaticArray<u8>): void {
+  onlyOwner();
+
+  const args = new Args(binaryArgs);
+  const templateAddress = args
+    .nextString()
+    .expect('template address expected');
+
+  Storage.set(MULTISIG_TEMPLATE_ADDRESS_KEY, templateAddress);
+
+  generateEvent(
+    createEvent('MULTISIG_TEMPLATE_ADDRESS_SET', [
+      templateAddress,
+      Context.caller().toString(),
+    ]),
+  );
+}
+
+export function getMultiSigTemplateAddress(): StaticArray<u8> {
+  const address = Storage.get(MULTISIG_TEMPLATE_ADDRESS_KEY);
+  assert(address != null, 'MULTISIG_TEMPLATE_NOT_SET');
   return stringToBytes(address);
 }

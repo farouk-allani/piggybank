@@ -69,29 +69,33 @@ export const WBTC_TOKEN_ADDRESS = 'AS1ZXy3nvqXAMm2w6viAg7frte6cZfJM8hoMvWf4KoKDz
 export const BASE_TOKEN_ADDRESS = USDC_TOKEN_ADDRESS;
 
 // Predefined tokens for Massa network
-export const AVAILABLE_TOKENS: Omit<TokenSelection, 'percentage' | 'isSelected'>[] = [
+export const AVAILABLE_TOKENS: (Omit<TokenSelection, 'percentage' | 'isSelected'> & { decimals: number })[] = [
   {
     address: WMAS_TOKEN_ADDRESS,
     symbol: 'WMAS',
     name: 'Wrapped MAS',
-    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/23862.png'
+    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/23862.png',
+    decimals: WMAS_DECIMALS,
   },
   {
     address: USDC_TOKEN_ADDRESS,
     symbol: 'USDC',
     name: 'USD Coin',
-    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png'
+    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png',
+    decimals: USDC_DECIMALS,
   },
   {
     address: WETH_TOKEN_ADDRESS,
     symbol: 'WETH',
     name: 'Wrapped Ethereum',
-    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png'
+    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png',
+    decimals: WETH_DECIMALS,
   },
   {
     address: WBTC_TOKEN_ADDRESS,
     symbol: 'WBTC',
     name: 'Wrapped Bitcoin',
-    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png'
+    logo: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png',
+    decimals: WBTC_DECIMALS,
   }
 ];

@@ -35,11 +35,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
           <Link to="/" className="brut-btn bg-white flex items-center gap-2">
             <img src="/piggybank yellow massa.png" className="w-auto h-6" />{" "}
-            Massa Piggybank
+            PiggyBank
           </Link>
           <nav className="hidden md:flex items-center gap-3">
             <NavLink to="/dashboard">Dashboard</NavLink>
             <NavLink to="/vault/create">Create Vault</NavLink>
+            {/* <NavLink to="/vault/multisig/create">Multi-Sig</NavLink> */}
             <NavLink to="/dca/dashboard">DCA</NavLink>
             {/* <NavLink to="/analytics">Analytics</NavLink> */}
             <NavLink to="/about">About</NavLink>

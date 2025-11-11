@@ -1,20 +1,23 @@
 import { useState } from "react";
 import { useAccountStore } from "@massalabs/react-ui-kit";
 import { withdrawFromVault } from "../lib/massa";
-import { TokenSelection } from "../lib/types";
+import { proposeWithdrawal } from "../lib/multiSigVault";
+import { TokenSelection, AVAILABLE_TOKENS } from "../lib/types";
 
 interface VaultWithdrawProps {
   vaultAddress: string;
   vaultTokens: TokenSelection[];
   tokenBalances: { [tokenAddress: string]: string };
   onSuccess?: () => void;
+  isMultiSig?: boolean;
 }
 
-export default function VaultWithdraw({ 
-  vaultAddress, 
-  vaultTokens, 
-  tokenBalances, 
-  onSuccess 
+export default function VaultWithdraw({
+  vaultAddress,
+  vaultTokens,
+  tokenBalances,
+  onSuccess,
+  isMultiSig = false
 }: VaultWithdrawProps) {
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [amount, setAmount] = useState("");
@@ -56,13 +59,31 @@ export default function VaultWithdraw({
     setLoading(true);
 
     try {
-      const result = await withdrawFromVault(
-        connectedAccount,
-        vaultAddress,
-        selectedToken,
-        amount,
-        toAddress
-      );
+      let result;
+
+      if (isMultiSig) {
+        // For multi-sig vaults, create a withdrawal proposal
+        const tokenInfo = AVAILABLE_TOKENS.find(t => t.address === selectedToken);
+        const decimals = tokenInfo?.decimals || 6;
+
+        result = await proposeWithdrawal(
+          connectedAccount,
+          vaultAddress,
+          selectedToken,
+          amount,
+          toAddress,
+          decimals
+        );
+      } else {
+        // For regular vaults, withdraw directly
+        result = await withdrawFromVault(
+          connectedAccount,
+          vaultAddress,
+          selectedToken,
+          amount,
+          toAddress
+        );
+      }
 
       if (result.success) {
         setAmount("");
@@ -178,14 +199,26 @@ export default function VaultWithdraw({
             disabled={!connectedAccount || !selectedToken || !isValidAmount || !isValidAddress || loading}
             className="w-full brut-btn bg-red-300 border-red-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {loading ? "Withdrawing..." : "Withdraw Tokens"}
+            {loading
+              ? (isMultiSig ? "Creating Proposal..." : "Withdrawing...")
+              : (isMultiSig ? "Create Withdrawal Proposal" : "Withdraw Tokens")
+            }
           </button>
 
           {/* Warning */}
           <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-3">
             <p className="text-xs text-yellow-800">
-              ⚠️ <strong>Owner Only:</strong> Only the vault owner can withdraw tokens. 
-              Withdrawals will transfer tokens directly to the specified address.
+              {isMultiSig ? (
+                <>
+                  🔐 <strong>Multi-Sig:</strong> This will create a withdrawal proposal.
+                  Other signers must approve before the withdrawal executes.
+                </>
+              ) : (
+                <>
+                  ⚠️ <strong>Owner Only:</strong> Only the vault owner can withdraw tokens.
+                  Withdrawals will transfer tokens directly to the specified address.
+                </>
+              )}
             </p>
           </div>
         </div>

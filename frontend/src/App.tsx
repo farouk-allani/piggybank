@@ -10,6 +10,7 @@ import Settings from "./pages/Settings.tsx";
 
 import DCADashboard from "./pages/DCADashboard.tsx";
 import DCADetails from "./pages/DCADetails.tsx";
+
 import AppLayout from "./components/AppLayout.tsx";
 import NetworkWarningModal from "./components/NetworkWarningModal.tsx";
 import useAccountSync from "./hooks/useAccountSync.tsx";
@@ -37,7 +38,7 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </AppLayout>
-      
+
       <ToastContainer
         position="top-right"
         autoClose={5000}

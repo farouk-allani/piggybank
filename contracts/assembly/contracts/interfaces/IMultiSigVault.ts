@@ -1,9 +1,9 @@
 import { Address, call } from '@massalabs/massa-as-sdk';
+import { Args } from '@massalabs/as-types';
 import { TokenWithPercentage } from '../structs/token';
 import { u256 } from 'as-bignum/assembly';
-import { Args } from '@massalabs/as-types';
 
-export class ISplitter {
+export class IMultiSigVault {
   _origin: Address;
 
   constructor(origin: Address) {
@@ -11,18 +11,20 @@ export class ISplitter {
   }
 
   init(
+    signers: string[],
+    threshold: u8,
     tokensWithPercentage: TokenWithPercentage[],
-    vaultCreatorAddress: Address,
-    eaglefiRouterAddress: Address,
+    vaultName: string,
+    eaglefiRouterAddress: string,
     coins: u64 = 0,
-    vaultName: string = 'My Vault',
   ): void {
     const args = new Args();
 
+    args.add(signers);
+    args.add(threshold);
     args.addSerializableObjectArray(tokensWithPercentage);
-    args.add(vaultCreatorAddress);
-    args.add(eaglefiRouterAddress);
     args.add(vaultName);
+    args.add(eaglefiRouterAddress);
 
     call(this._origin, 'constructor', args, coins);
   }
@@ -36,4 +38,28 @@ export class ISplitter {
 
     call(this._origin, 'deposit', args, coins);
   }
+
+  proposeWithdrawal(
+    token: Address,
+    amount: u256,
+    recipient: Address,
+    coins: u64 = 0,
+  ): void {
+    const args = new Args();
+
+    args.add(token);
+    args.add(amount);
+    args.add(recipient);
+
+    call(this._origin, 'proposeWithdrawal', args, coins);
+  }
+
+  approveProposal(proposalId: u32, coins: u64 = 0): void {
+    const args = new Args();
+
+    args.add(proposalId);
+
+    call(this._origin, 'approveProposal', args, coins);
+  }
 }
+
