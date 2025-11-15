@@ -25,9 +25,12 @@ export default function Landing() {
             <Link to="/dca/create" className="brut-btn bg-blue-300">
               Create DCA
             </Link>
-            <Link to="/dashboard" className="brut-btn bg-yellow-300">
-              View Dashboard
+            <Link to="/alm" className="brut-btn bg-purple-300">
+              Liquidity Pool
             </Link>
+            {/* <Link to="/dashboard" className="brut-btn bg-yellow-300">
+              View Dashboard
+            </Link> */}
           </div>
           <p className="mt-3 text-sm">Deployed on DeWeb ·</p>
         </div>
@@ -39,7 +42,7 @@ export default function Landing() {
               className="mx-auto"
             />
             <p className="font-bold mt-2">
-              Your on‑chain piggybank NFT evolves as you save.
+              Your autonomous savings vault on Massa blockchain.
             </p>
           </div>
         </div>
@@ -49,10 +52,10 @@ export default function Landing() {
         <BentoCard title="Autonomous Savings" bg="#FD5A46">
           <p>Set once. Runs forever with Deferred Calls.</p>
         </BentoCard>
-        <BentoCard title="Multi-Sig Vaults" bg="#A78BFA">
+        <BentoCard title="Liquidity Pools" bg="#C084FC">
           <p>
-            Save together with family or team. Requires multiple approvals for
-            withdrawals.
+            Provide liquidity and earn fees from automated market making.
+            Passive income from trading activity.
           </p>
         </BentoCard>
         <BentoCard title="DCA Strategies" bg="#84CC16">

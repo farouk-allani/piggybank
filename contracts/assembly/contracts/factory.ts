@@ -19,7 +19,7 @@ import {
   USDC_TOKEN_ADDRESS,
   WETH_TOKEN_ADDRESS,
   WMAS_TOKEN_ADDRESS,
-} from './storage';
+} from './lib/storage';
 import { ISplitter } from './interfaces/ISplitter';
 import { IMultiSigVault } from './interfaces/IMultiSigVault';
 import { u256 } from 'as-bignum/assembly';

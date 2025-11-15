@@ -8,6 +8,7 @@
         "build": "massa-as-compile",
         "clean": "rimraf build",
         "deploy": "npm run build && tsx src/deploy.ts",
+        "deploy:liqManager": "npm run build && tsx src/deployLiqManager.ts",
         "hello": "tsx src/hello.ts",
         "prettier": "prettier '**/src/**/*.ts' --check && as-prettier --check assembly",
         "prettier:fix": "prettier '**/src/**/*.ts' --write && as-prettier --write assembly",
@@ -19,7 +20,8 @@
         "test:createSplitter": "npm run build && tsx src/tests/createSplitterVault.test.ts",
         "test:createAndDepositSplitter": "npm run build && tsx src/tests/createAndDepositSpliter.test.ts",
         "test:getSplitterInfo": "tsx src/tests/getVaultDetails.test.ts",
-        "test:autoDeposit": "npm run build && tsx src/tests/autoDeposit.test.ts"
+        "test:autoDeposit": "npm run build && tsx src/tests/autoDeposit.test.ts",
+        "test:liqManager": "npm run build && tsx src/tests/liqManager.test.ts"
     },
     "keywords": [],
     "author": "",

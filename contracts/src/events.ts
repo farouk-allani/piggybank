@@ -13,8 +13,7 @@ const client = provider.client;
 // console.log('Deferred Calls Info:', defCallInfo);
 
 const events = await provider.getEvents({
-  // callerAddress: account.address.toString(),
-  smartContractAddress: 'AS18yCibaFYQbRsCYAB7VqKsusDoBNxQ3222UFGvEodnVWPjsjEE',
+  callerAddress: account.address.toString(),
   // callerAddress: 'AS123VRQFat2EqNC1mhq56HDnJcjgkT9gEjfw766ageHLGviDsjab',
 });
 

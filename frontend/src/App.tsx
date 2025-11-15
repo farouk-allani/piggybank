@@ -17,6 +17,7 @@ import useAccountSync from "./hooks/useAccountSync.tsx";
 import useNetworkCheck from "./hooks/useNetworkCheck.tsx";
 import "react-toastify/dist/ReactToastify.css";
 import CreateDCA from "./pages/CreateDCA.tsx";
+import ALM from "./pages/ALM.tsx";
 
 export default function App() {
   useAccountSync();
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/about" element={<About />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/alm" element={<ALM />} />
         </Routes>
       </AppLayout>
 

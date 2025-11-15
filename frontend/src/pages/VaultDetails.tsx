@@ -417,6 +417,78 @@ export default function VaultDetails() {
               </div>
             )} */}
 
+            {/* Pending Proposals - Horizontal Compact Display */}
+            {isMultiSig && pendingProposals.length > 0 && (
+              <div className="mb-4 brut-card bg-gradient-to-r from-yellow-100 to-orange-100 p-4 border-2 border-yellow-400">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">⏳</span>
+                    <h3 className="font-bold text-lg">
+                      Pending Withdrawals ({pendingProposals.length})
+                    </h3>
+                  </div>
+                  <span className="text-xs bg-white px-3 py-1 rounded-full border-2 border-ink-950 font-bold">
+                    {multiSigInfo?.threshold} signatures required
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  {pendingProposals.slice(0, 3).map((proposal) => {
+                    const tokenInfo = AVAILABLE_TOKENS.find(
+                      (t) =>
+                        t.address.toLowerCase() === proposal.token.toLowerCase()
+                    );
+                    const decimals = tokenInfo?.decimals || 6;
+                    const readableAmount = formatUnits(
+                      BigInt(proposal.amount),
+                      decimals
+                    );
+
+                    return (
+                      <div
+                        key={proposal.id}
+                        className="bg-white border-2 border-ink-950 rounded-xl p-3 flex items-center justify-between hover:bg-yellow-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          <span className="text-xs font-bold text-gray-600 min-w-[80px]">
+                            Proposal #{proposal.id}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            {tokenInfo?.logo && (
+                              <img
+                                src={tokenInfo.logo}
+                                alt={tokenInfo.symbol}
+                                className="w-6 h-6 rounded-full"
+                              />
+                            )}
+                            <span className="font-bold text-lg">
+                              {readableAmount} {tokenInfo?.symbol}
+                            </span>
+                          </div>
+
+                          <span className="text-sm text-gray-600 font-mono">
+                            → {shortenAddress(proposal.recipient, 8)}
+                          </span>
+                        </div>
+
+                        <span className="text-sm bg-blue-100 px-3 py-1 rounded-full font-bold border-2 border-blue-300">
+                          {proposal.approvals.length}/
+                          {multiSigInfo?.threshold || 0}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {pendingProposals.length > 3 && (
+                  <p className="text-xs text-gray-600 mt-2 text-center">
+                    +{pendingProposals.length - 3} more proposals below
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Auto Deposit Countdown - Compact Display */}
             {!checkingAutoDeposit && autoDepositActive && (
               <div className="mb-4 brut-card bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100 p-3 border-2 border-purple-400">
@@ -615,12 +687,10 @@ export default function VaultDetails() {
             </div>
           )}
 
-          {/* Pending Proposals for Multi-Sig Vaults */}
-          {isMultiSig && pendingProposals.length > 0 && (
+          {/* Detailed Pending Proposals for Multi-Sig Vaults */}
+          {/* {isMultiSig && pendingProposals.length > 0 && (
             <div className="brut-card bg-white p-6">
-              <h3 className="text-xl font-bold mb-4">
-                📋 Pending Withdrawal Proposals ({pendingProposals.length})
-              </h3>
+              <h3 className="text-lg font-bold mb-4">All Pending Proposals</h3>
               <div className="space-y-4">
                 {pendingProposals.map((proposal) => {
                   const tokenInfo = AVAILABLE_TOKENS.find(
@@ -814,7 +884,7 @@ export default function VaultDetails() {
                 })}
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Vault Info */}
           <div className="brut-card bg-white p-6">

@@ -1,4 +1,5 @@
 import { Args } from '@massalabs/as-types';
+import { u256 } from 'as-bignum/assembly';
 
 /**
  * Serializes an array of strings into a static array of bytes.
@@ -29,4 +30,26 @@ export function generateSplitterUserKey(
   vaultAdd: string,
 ): string {
   return 'SPL:' + userAddr + ':' + vaultAdd;
+}
+
+export function arrayToString(arr: u256[]): string {
+  let result = '[';
+  for (let i = 0; i < arr.length; i++) {
+    result += arr[i].toString();
+    if (i < arr.length - 1) {
+      result += ', ';
+    }
+  }
+
+  result += ']';
+
+  return result;
+}
+
+/**
+ * @notice Function to convert a u256 to a UTF-16 bytes then to a string
+ * @dev u256.toString() is too expensive in as-bignum so we use this instead
+ */
+export function u256ToString(u: u256): string {
+  return String.UTF16.decode(changetype<ArrayBuffer>(u));
 }

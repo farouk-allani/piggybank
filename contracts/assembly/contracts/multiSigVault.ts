@@ -23,7 +23,7 @@ import {
 import { TokenWithPercentage } from './structs/token';
 import { _setOwner } from './lib/ownership-internal';
 import { ReentrancyGuard } from './lib/ReentrancyGuard';
-import { BASE_TOKEN_ADDRESS, WMAS_TOKEN_ADDRESS } from './storage';
+import { BASE_TOKEN_ADDRESS, WMAS_TOKEN_ADDRESS } from './lib/storage';
 import { IMRC20 } from './interfaces/IMRC20';
 import { getBalanceEntryCost } from '@massalabs/sc-standards/assembly/contracts/MRC20/MRC20-external';
 import { deserializeStringArray, serializeStringArray } from './lib/utils';
