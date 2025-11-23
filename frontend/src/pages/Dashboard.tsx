@@ -204,13 +204,8 @@ export default function Dashboard() {
               to={`/vault/${vault.address}`}
               className="brut-card p-6 bg-white hover:translate-y-[-2px] transition-transform"
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3">
                 <h3 className="text-lg font-bold">{vault.name}</h3>
-                {vault.isMultiSig && (
-                  <span className="brut-btn bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1">
-                    MULTI-SIG
-                  </span>
-                )}
               </div>
 
               <div className="space-y-2 mb-4">
@@ -248,7 +243,12 @@ export default function Dashboard() {
                 <p className="text-xl font-black">{vault.balance} MAS</p>
               </div> */}
 
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex gap-2 flex-wrap">
+                {vault.isMultiSig && (
+                  <span className="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-semibold">
+                    Multi-Sig
+                  </span>
+                )}
                 <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                   Auto-Split
                 </span>

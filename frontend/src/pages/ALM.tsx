@@ -5,6 +5,7 @@ import {
   deposit,
   fetchSpotPrice,
   getLiqShares,
+  getTotalSupply,
   getVaultTokensDetails,
   TokenDetails,
   withdraw,
@@ -31,6 +32,7 @@ export default function ALM() {
   const [tokenYDetails, setTokenYDetails] = useState<TokenDetails | null>(null);
   const [liqShares, setLiqShares] = useState<string | null>(null);
   const [liqSharesRaw, setLiqSharesRaw] = useState<string | null>(null); // Store raw value for calculations
+  const [totalSupply, setTotalSupply] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -68,20 +70,24 @@ export default function ALM() {
         "📊 Fetching liquidity shares, spot price, and token details..."
       );
 
-      const [liqSharesData, priceData, vaultTokensDetails] = await Promise.all([
-        getLiqShares(connectedAccount),
-        fetchSpotPrice(connectedAccount),
-        getVaultTokensDetails(connectedAccount),
-      ]);
+      const [liqSharesData, priceData, vaultTokensDetails, totalSupplyData] =
+        await Promise.all([
+          getLiqShares(connectedAccount),
+          fetchSpotPrice(connectedAccount),
+          getVaultTokensDetails(connectedAccount),
+          getTotalSupply(connectedAccount),
+        ]);
 
       console.log("✅ Data fetched:");
       console.log("  - Liquidity Shares:", liqSharesData);
       console.log("  - Spot Price:", priceData);
       console.log("  - Token Details:", vaultTokensDetails);
+      console.log("  - Total Supply:", totalSupplyData);
 
       if (vaultTokensDetails.length >= 2) {
         setLiqShares(liqSharesData.formatted);
         setLiqSharesRaw(liqSharesData.raw);
+        setTotalSupply(totalSupplyData);
         setSpotPrice(priceData);
         setTokenXDetails(vaultTokensDetails[0]);
         setTokenYDetails(vaultTokensDetails[1]);
@@ -217,7 +223,11 @@ export default function ALM() {
     );
   }
 
-  const shareOfPool = liqShares && parseFloat(liqShares) > 0 ? "100" : "0";
+  // Calculate actual share of pool
+  const shareOfPool =
+    liqSharesRaw && totalSupply && BigInt(totalSupply) > 0
+      ? ((Number(liqSharesRaw) / Number(totalSupply)) * 100).toFixed(2)
+      : "0";
   const hasLiquidity = liqShares && parseFloat(liqShares) > 0;
 
   return (
@@ -522,7 +532,7 @@ export default function ALM() {
             </button>
 
             <div className="text-xs text-gray-600 space-y-1 mt-3">
-              <p>• Provide both tokens in the correct ratio</p>
+              <p>• Provide both tokens</p>
               <p>• You'll receive LP tokens representing your share</p>
               <p>• Earn fees from all swaps in this pool</p>
             </div>

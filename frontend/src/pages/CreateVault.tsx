@@ -29,7 +29,7 @@ export default function CreateVault() {
 
   // Multi-sig state
   const [isMultiSig, setIsMultiSig] = useState(false);
-  const [signers, setSigners] = useState<string[]>(['', '']);
+  const [signers, setSigners] = useState<string[]>(["", ""]);
   const [threshold, setThreshold] = useState(2);
 
   // Auto deposit state
@@ -129,7 +129,7 @@ export default function CreateVault() {
         // Create multi-sig vault
         result = await createMultiSigVault(
           connectedAccount,
-          signers.filter(s => s.trim().length > 0),
+          signers.filter((s) => s.trim().length > 0),
           threshold,
           tokensWithPercentage,
           vaultName
@@ -214,18 +214,42 @@ export default function CreateVault() {
 
           {/* Multi-Sig Toggle */}
           <div className="brut-card bg-purple-50 p-4">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isMultiSig}
-                onChange={(e) => setIsMultiSig(e.target.checked)}
-                className="w-5 h-5 border-3 border-ink-950 rounded"
-              />
-              <div>
-                <span className="font-bold">Enable Multi-Signature</span>
-                <p className="text-xs text-gray-600">
-                  Require multiple approvals for withdrawals (perfect for families, couples, or teams)
-                </p>
+            <label className="flex items-start space-x-3 cursor-pointer">
+              <div className="relative flex-shrink-0 mt-1">
+                <input
+                  type="checkbox"
+                  checked={isMultiSig}
+                  onChange={(e) => setIsMultiSig(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div
+                  className={`w-6 h-6 border-3 border-ink-950 rounded-lg transition-all ${
+                    isMultiSig ? "bg-purple-300" : "bg-white"
+                  }`}
+                >
+                  {isMultiSig && (
+                    <svg
+                      className="w-full h-full p-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={4}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-lg">Enable Multi-Signature</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Require multiple approvals for withdrawals (perfect for
+                  families, couples, or teams)
+                </div>
               </div>
             </label>
           </div>
@@ -237,7 +261,9 @@ export default function CreateVault() {
 
               <div>
                 <label className="block mb-2">
-                  <span className="font-bold text-sm">Signers (2-5 addresses)</span>
+                  <span className="font-bold text-sm">
+                    Signers (2-5 addresses)
+                  </span>
                 </label>
                 {signers.map((signer, index) => (
                   <div key={index} className="mb-2">
@@ -256,7 +282,7 @@ export default function CreateVault() {
                 <div className="flex gap-2">
                   {signers.length < 5 && (
                     <button
-                      onClick={() => setSigners([...signers, ''])}
+                      onClick={() => setSigners([...signers, ""])}
                       className="brut-btn bg-purple-200 text-sm"
                     >
                       + Add Signer
@@ -275,24 +301,35 @@ export default function CreateVault() {
 
               <div>
                 <label className="block mb-2">
-                  <span className="font-bold text-sm">Approval Threshold</span>
-                  <p className="text-xs text-gray-600">
+                  <span className="font-bold">Approval Threshold</span>
+                  <p className="text-xs text-gray-600 mt-1">
                     Number of signatures required for withdrawals
                   </p>
                 </label>
-                <select
-                  value={threshold}
-                  onChange={(e) => setThreshold(Number(e.target.value))}
-                  className="w-full border-2 border-ink-950 rounded-lg p-2"
-                >
-                  {Array.from({ length: signers.filter(s => s.trim()).length }, (_, i) => i + 1)
-                    .filter(n => n >= 2)
-                    .map(n => (
-                      <option key={n} value={n}>
-                        {n} of {signers.filter(s => s.trim()).length}
-                      </option>
+                <div className="flex gap-2 flex-wrap">
+                  {Array.from(
+                    { length: signers.filter((s) => s.trim()).length },
+                    (_, i) => i + 1
+                  )
+                    .filter((n) => n >= 2)
+                    .map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setThreshold(n)}
+                        className={`brut-btn px-4 py-2 transition-colors ${
+                          threshold === n
+                            ? "bg-purple-300"
+                            : "bg-white hover:bg-purple-100"
+                        }`}
+                      >
+                        <span className="font-bold">{n}</span>
+                        <span className="text-sm text-gray-600 ml-1">
+                          / {signers.filter((s) => s.trim()).length}
+                        </span>
+                      </button>
                     ))}
-                </select>
+                </div>
               </div>
             </div>
           )}
@@ -307,7 +344,8 @@ export default function CreateVault() {
             </p>
             {isMultiSig && (
               <p className="text-sm mb-2 text-purple-700 font-semibold">
-                🔐 With multi-sig enabled, withdrawals will require {threshold} approvals from the signers.
+                🔐 With multi-sig enabled, withdrawals will require {threshold}{" "}
+                approvals from the signers.
               </p>
             )}
             <p className="text-xs text-blue-600 font-semibold">
@@ -471,122 +509,126 @@ export default function CreateVault() {
             )}
           </div>
 
-          {/* Auto Deposit Configuration */}
-          <div className="brut-card bg-gradient-to-r from-lime-100 to-green-100 p-6 border-2 border-lime-400">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                🔄 Auto Deposit (Optional)
-              </h3>
-              <label className="cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={enableAutoDepositFeature}
-                  onChange={(e) => {
-                    setEnableAutoDepositFeature(e.target.checked);
-                    if (!e.target.checked) {
-                      setAutoDepositAmount("");
-                      setAutoDepositNextExecution(null);
-                    } else {
-                      // Calculate next execution time (1 week from now)
-                      const nextExecution =
-                        Date.now() + AUTO_DEPOSIT_INTERVAL_SECONDS * 1000;
-                      setAutoDepositNextExecution(nextExecution);
-                    }
-                  }}
-                  className="sr-only peer"
-                />
-                <div
-                  className={`w-14 h-8 border-3 border-ink-950 rounded-full transition-all relative ${
-                    enableAutoDepositFeature ? "bg-lime-400" : "bg-gray-300"
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-ink-950 rounded-full transition-transform ${
-                      enableAutoDepositFeature ? "translate-x-6" : ""
-                    }`}
-                  />
-                </div>
-              </label>
-            </div>
-
-            {enableAutoDepositFeature && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block mb-2">
-                    <span className="font-bold">Amount per Deposit (USDC)</span>
-                  </label>
+          {/* Auto Deposit Configuration - Not available for Multi-Sig */}
+          {!isMultiSig && (
+            <div className="brut-card bg-gradient-to-r from-lime-100 to-green-100 p-6 border-2 border-lime-400">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  🔄 Auto Deposit (Optional)
+                </h3>
+                <label className="cursor-pointer">
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={autoDepositAmount}
-                    onChange={(e) => setAutoDepositAmount(e.target.value)}
-                    className="w-full border-3 border-ink-950 rounded-2xl p-3"
-                    placeholder="e.g., 100"
+                    type="checkbox"
+                    checked={enableAutoDepositFeature}
+                    onChange={(e) => {
+                      setEnableAutoDepositFeature(e.target.checked);
+                      if (!e.target.checked) {
+                        setAutoDepositAmount("");
+                        setAutoDepositNextExecution(null);
+                      } else {
+                        // Calculate next execution time (1 week from now)
+                        const nextExecution =
+                          Date.now() + AUTO_DEPOSIT_INTERVAL_SECONDS * 1000;
+                        setAutoDepositNextExecution(nextExecution);
+                      }
+                    }}
+                    className="sr-only peer"
                   />
-                </div>
-
-                <div className="brut-card bg-white p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold">Deposit Frequency:</span>
-                    <span className="text-lg font-black text-lime-600">
-                      Every 1 Week
-                    </span>
+                  <div
+                    className={`w-14 h-8 border-3 border-ink-950 rounded-full transition-all relative ${
+                      enableAutoDepositFeature ? "bg-lime-400" : "bg-gray-300"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-ink-950 rounded-full transition-transform ${
+                        enableAutoDepositFeature ? "translate-x-6" : ""
+                      }`}
+                    />
                   </div>
-                  <p className="text-xs text-gray-600">
-                    Fixed interval due to Massa blockchain deferred calls
-                    limitation
-                  </p>
-                </div>
-
-                {autoDepositNextExecution &&
-                  autoDepositAmount &&
-                  parseFloat(autoDepositAmount) > 0 && (
-                    <div className="brut-card bg-white p-4">
-                      <p className="text-sm font-bold mb-2">
-                        ⏰ First Auto Deposit In:
-                      </p>
-                      <CountdownTimer
-                        targetTimestamp={autoDepositNextExecution}
-                        className="mt-2"
-                      />
-                    </div>
-                  )}
-
-                <div className="brut-card bg-yellow-50 p-4 border-2 border-yellow-400">
-                  <h4 className="font-bold text-sm mb-2">
-                    ⚠️ Important Requirements:
-                  </h4>
-                  <ul className="text-xs space-y-1">
-                    <li>
-                      • Requires ~20 MAS for deferred calls (one-time cost)
-                    </li>
-                    <li>
-                      • Ensure sufficient USDC balance for recurring deposits
-                    </li>
-                    <li>
-                      • Auto deposit will continue until disabled or
-                      insufficient funds
-                    </li>
-                    <li>
-                      • You can disable auto deposit anytime from vault details
-                      page
-                    </li>
-                    <li>
-                      • USDC approval will be set for 1000x the deposit amount
-                    </li>
-                  </ul>
-                </div>
+                </label>
               </div>
-            )}
 
-            {!enableAutoDepositFeature && (
-              <p className="text-sm text-gray-600">
-                Enable to automatically deposit USDC to your vault every week.
-                You can configure this later from the vault details page.
-              </p>
-            )}
-          </div>
+              {enableAutoDepositFeature && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block mb-2">
+                      <span className="font-bold">
+                        Amount per Deposit (USDC)
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={autoDepositAmount}
+                      onChange={(e) => setAutoDepositAmount(e.target.value)}
+                      className="w-full border-3 border-ink-950 rounded-2xl p-3"
+                      placeholder="e.g., 100"
+                    />
+                  </div>
+
+                  <div className="brut-card bg-white p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold">Deposit Frequency:</span>
+                      <span className="text-lg font-black text-lime-600">
+                        Every 1 Week
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Fixed interval due to Massa blockchain deferred calls
+                      limitation
+                    </p>
+                  </div>
+
+                  {autoDepositNextExecution &&
+                    autoDepositAmount &&
+                    parseFloat(autoDepositAmount) > 0 && (
+                      <div className="brut-card bg-white p-4">
+                        <p className="text-sm font-bold mb-2">
+                          ⏰ First Auto Deposit In:
+                        </p>
+                        <CountdownTimer
+                          targetTimestamp={autoDepositNextExecution}
+                          className="mt-2"
+                        />
+                      </div>
+                    )}
+
+                  <div className="brut-card bg-yellow-50 p-4 border-2 border-yellow-400">
+                    <h4 className="font-bold text-sm mb-2">
+                      ⚠️ Important Requirements:
+                    </h4>
+                    <ul className="text-xs space-y-1">
+                      <li>
+                        • Requires ~20 MAS for deferred calls (one-time cost)
+                      </li>
+                      <li>
+                        • Ensure sufficient USDC balance for recurring deposits
+                      </li>
+                      <li>
+                        • Auto deposit will continue until disabled or
+                        insufficient funds
+                      </li>
+                      <li>
+                        • You can disable auto deposit anytime from vault
+                        details page
+                      </li>
+                      <li>
+                        • USDC approval will be set for 1000x the deposit amount
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {!enableAutoDepositFeature && (
+                <p className="text-sm text-gray-600">
+                  Enable to automatically deposit USDC to your vault every week.
+                  You can configure this later from the vault details page.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -620,8 +662,9 @@ export default function CreateVault() {
             </div>
           </div>
 
-          {/* Auto Deposit Summary */}
-          {enableAutoDepositFeature &&
+          {/* Auto Deposit Summary - Not available for Multi-Sig */}
+          {!isMultiSig &&
+            enableAutoDepositFeature &&
             autoDepositAmount &&
             parseFloat(autoDepositAmount) > 0 && (
               <div className="brut-card bg-gradient-to-r from-lime-100 to-green-100 p-6 border-2 border-lime-400">

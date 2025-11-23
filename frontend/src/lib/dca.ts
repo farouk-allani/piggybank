@@ -195,7 +195,7 @@ export async function stopDCA(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '🛑 DCA strategy stopped successfully',
+        render: 'DCA strategy stopped successfully',
         type: 'success',
         isLoading: false,
         autoClose: 5000,

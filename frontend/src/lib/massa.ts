@@ -86,7 +86,7 @@ export async function createSplitterVault(
       }
 
       toast.update(toastId, {
-        render: '🎉 Vault created successfully!',
+        render: 'Vault created successfully!',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -215,7 +215,7 @@ export async function depositToVault(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '💰 Deposit successful! USDC is being split across your vault.',
+        render: 'Deposit successful! USDC is being split across your vault.',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -284,7 +284,7 @@ export async function approveUSDCSpending(
       console.log('USDC allowance increased successfully');
 
       toast.update(toastId, {
-        render: '✅ USDC spending approved successfully',
+        render: ' USDC spending approved successfully',
         type: 'success',
         isLoading: false,
         autoClose: 3000,
@@ -440,7 +440,7 @@ export async function withdrawFromVault(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '💸 Withdrawal successful! Tokens transferred to your address.',
+        render: ' Withdrawal successful! Tokens transferred to your address.',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -631,7 +631,7 @@ export async function enableAutoDeposit(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '🔄 Auto deposit enabled successfully!',
+        render: 'Auto deposit enabled successfully!',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -691,7 +691,7 @@ export async function disableAutoDeposit(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '🛑 Auto deposit disabled successfully',
+        render: 'Auto deposit disabled successfully',
         type: 'success',
         isLoading: false,
         autoClose: 5000,

@@ -18,6 +18,7 @@ import useNetworkCheck from "./hooks/useNetworkCheck.tsx";
 import "react-toastify/dist/ReactToastify.css";
 import CreateDCA from "./pages/CreateDCA.tsx";
 import ALM from "./pages/ALM.tsx";
+import BuyMassa from "./pages/BuyMassa.tsx";
 
 export default function App() {
   useAccountSync();
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/alm" element={<ALM />} />
+          <Route path="/buy-massa" element={<BuyMassa />} />
         </Routes>
       </AppLayout>
 

@@ -263,6 +263,26 @@ export async function getLiqShares(
   }
 }
 
+export async function getTotalSupply(connectedAccount: any): Promise<string> {
+  try {
+    const contractAddress = import.meta.env.VITE_LIQ_MANAGER_CONTRACT;
+
+    if (!contractAddress) {
+      throw new Error("Liq Manager contract address is not defined");
+    }
+
+    const contract = new MRC20(connectedAccount, contractAddress);
+    const totalSupply = await contract.totalSupply();
+
+    console.log("🔍 getTotalSupply - Raw total supply:", totalSupply.toString());
+
+    return totalSupply.toString();
+  } catch (error) {
+    console.error("❌ Error fetching total supply:", error);
+    return "0";
+  }
+}
+
 export async function withdraw(
   connectedAccount: any,
   shares: number

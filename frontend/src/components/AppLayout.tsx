@@ -43,6 +43,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {/* <NavLink to="/vault/multisig/create">Multi-Sig</NavLink> */}
             <NavLink to="/dca/dashboard">DCA</NavLink>
             <NavLink to="/alm">ALM</NavLink>
+            <NavLink to="/buy-massa">Buy MAS</NavLink>
             {/* <NavLink to="/analytics">Analytics</NavLink> */}
             <NavLink to="/about">About</NavLink>
             {/* <NavLink to="/settings">Settings</NavLink> */}

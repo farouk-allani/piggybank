@@ -489,8 +489,8 @@ export default function VaultDetails() {
               </div>
             )}
 
-            {/* Auto Deposit Countdown - Compact Display */}
-            {!checkingAutoDeposit && autoDepositActive && (
+            {/* Auto Deposit Countdown - Compact Display (Not available for Multi-Sig) */}
+            {!checkingAutoDeposit && autoDepositActive && !isMultiSig && (
               <div className="mb-4 brut-card bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100 p-3 border-2 border-purple-400">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -525,27 +525,30 @@ export default function VaultDetails() {
               </div>
             )}
 
-            {/* Auto Deposit CTA - When Not Active */}
-            {!checkingAutoDeposit && !autoDepositActive && connectedAccount && (
-              <div className="mb-4 brut-card bg-gradient-to-r from-lime-50 to-green-50 p-4 border-2 border-lime-400">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-sm text-green-900 mb-1">
-                      Automate Your Deposits
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Set up weekly recurring deposits to this vault
-                    </p>
+            {/* Auto Deposit CTA - When Not Active (Not available for Multi-Sig) */}
+            {!checkingAutoDeposit &&
+              !autoDepositActive &&
+              connectedAccount &&
+              !isMultiSig && (
+                <div className="mb-4 brut-card bg-gradient-to-r from-lime-50 to-green-50 p-4 border-2 border-lime-400">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-sm text-green-900 mb-1">
+                        Automate Your Deposits
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Set up weekly recurring deposits to this vault
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowAutoDepositModal(true)}
+                      className="brut-btn bg-lime-300 text-sm px-4 py-2 font-bold hover:bg-lime-400"
+                    >
+                      Enable Auto Deposit
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setShowAutoDepositModal(true)}
-                    className="brut-btn bg-lime-300 text-sm px-4 py-2 font-bold hover:bg-lime-400"
-                  >
-                    Enable Auto Deposit
-                  </button>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-1">Vault Address:</p>
@@ -688,7 +691,7 @@ export default function VaultDetails() {
           )}
 
           {/* Detailed Pending Proposals for Multi-Sig Vaults */}
-          {/* {isMultiSig && pendingProposals.length > 0 && (
+          {isMultiSig && pendingProposals.length > 0 && (
             <div className="brut-card bg-white p-6">
               <h3 className="text-lg font-bold mb-4">All Pending Proposals</h3>
               <div className="space-y-4">
@@ -884,7 +887,7 @@ export default function VaultDetails() {
                 })}
               </div>
             </div>
-          )} */}
+          )}
 
           {/* Vault Info */}
           <div className="brut-card bg-white p-6">

@@ -5,12 +5,7 @@ import {
   parseMas,
   parseUnits,
   OperationStatus,
-  bytesToStr,
   MRC20,
-  Web3Provider,
-  bytesToU64,
-  bytesToU32,
-  bytesToU8,
 } from '@massalabs/massa-web3';
 import { toast } from 'react-toastify';
 import {
@@ -328,7 +323,7 @@ export async function createMultiSigVault(
       }
 
       toast.update(toastId, {
-        render: '🎉 Multi-sig vault created successfully!',
+        render: 'Multi-sig vault created successfully!',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -409,7 +404,7 @@ export async function depositToMultiSigVault(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '✅ Deposit successful!',
+        render: 'Deposit successful!',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -475,7 +470,7 @@ export async function proposeWithdrawal(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '✅ Proposal created successfully!',
+        render: 'Proposal created successfully!',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -522,7 +517,7 @@ export async function approveProposal(
       vaultAddress
     );
 
-    const args = new Args().addU32(proposalId).serialize();
+    const args = new Args().addU32(BigInt(proposalId)).serialize();
 
     const operation = await vaultContract.call('approveProposal', args, {
       coins: parseMas('0.5'),
@@ -532,7 +527,7 @@ export async function approveProposal(
 
     if (status === OperationStatus.SpeculativeSuccess) {
       toast.update(toastId, {
-        render: '✅ Proposal approved!',
+        render: 'Proposal approved!',
         type: 'success',
         isLoading: false,
         autoClose: 5000,
@@ -565,26 +560,5 @@ export async function approveProposal(
 
 
 
-/**
- * Get threshold
- */
-export async function getThreshold(
-  connectedAccount: any,
-  vaultAddress: string
-): Promise<number> {
-  try {
-    const vaultContract = getMultiSigVaultContract(
-      connectedAccount,
-      vaultAddress
-    );
 
-    const result = await vaultContract.read('getThreshold');
-    const args = new Args(result.value);
-
-    return args.nextU8().unwrapOr(0);
-  } catch (error) {
-    console.error('Error getting threshold:', error);
-    return 0;
-  }
-}
 
